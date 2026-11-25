@@ -134,6 +134,12 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 #panel .row button{padding:10px 16px;border-radius:99px;background:rgba(255,255,255,.08);font-weight:700}
 #panel .row button.pri{background:var(--gold);color:#1b1424}
 
+/* ---------- Find stjernestøvet ---------- */
+#findBar{position:fixed;z-index:9;top:calc(env(safe-area-inset-top, 0px) + 12px);left:50%;transform:translateX(-50%);display:flex;gap:6px;padding:6px 12px;border-radius:99px;background:rgba(9,12,34,.5)}
+#findBar span{width:40px;height:40px;opacity:.28;filter:grayscale(1);transition:opacity .4s, filter .4s, transform .4s}
+#findBar span.on{opacity:1;filter:none;transform:scale(1.15)}
+#findBar svg{width:100%;height:100%}
+
 /* ---------- Pause og fortsæt ---------- */
 .bar-r{display:flex;gap:10px}
 #story.paused *{animation-play-state:paused!important}
@@ -260,6 +266,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
   <div class="grain"></div>
   <div id="sub" aria-live="polite"></div>
   <div id="choice" hidden></div>
+  <div id="findBar" hidden></div>
   <button id="cont" hidden aria-label="Fortsæt"><svg viewBox="0 0 24 24"><path d="M6 3.5 L20 12 L6 20.5Z" fill="#5a2a12"/></svg></button>
   <div id="bar">
     <button id="home" aria-label="Til kalenderen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v10h13V10"/></svg></button>
@@ -307,7 +314,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
   <div class="st-wrap">
     <header class="st-head">
       <button id="stBack" class="st-btn">← Tilbage</button>
-      <h2>Indtal dag 1</h2>
+      <h2>Indtal historien</h2>
     </header>
     <p class="st-tip">Læs roligt og med glæde, som når I læser godnathistorie. Giv gerne figurerne hver sin stemme: Pip lys og kvik, Mille fin og pippende, Ugo dyb og langsom. Replikker uden optagelse læses af telefonens stemme.</p>
     <p class="st-mode" id="stMode"></p>
@@ -411,7 +418,7 @@ const A = {
 const V = {
   ok: 'speechSynthesis' in window, voice: null, listed: false,
   pick() { if (!this.ok) return; const vs = speechSynthesis.getVoices(); this.listed = vs.length > 0; this.voice = vs.find(v => /^da/i.test(v.lang)) || null; },
-  roles: { n: { rate: .92, pitch: 1 }, pip: { rate: 1, pitch: 1.45 }, mille: { rate: 1.02, pitch: 1.75 }, ugo: { rate: .85, pitch: .6 } },
+  roles: { n: { rate: .92, pitch: 1 }, pip: { rate: 1, pitch: 1.45 }, mille: { rate: 1.02, pitch: 1.75 }, ugo: { rate: .85, pitch: .6 }, raev: { rate: .95, pitch: 1.2 }, egern: { rate: 1.1, pitch: 1.8 } },
   canSpeak() { return this.ok && settings.voice && (this.voice || !this.listed); },
   est(text) { return 1100 + text.length * 66; },
   stop() { try { speechSynthesis.cancel(); } catch (e) {} stopRec(); },
@@ -434,7 +441,7 @@ const V = {
 };
 if (V.ok) { V.pick(); speechSynthesis.onvoiceschanged = () => V.pick(); }
 
-const NAMES = { pip: 'Pip', mille: 'Mille', ugo: 'Ugo' };
+const NAMES = { pip: 'Pip', mille: 'Mille', ugo: 'Ugo', raev: 'Ræven', egern: 'Egernet' };
 function showSub(text, who, id) {
   const s = $('#sub');
   const force = !V.canSpeak() && !(id && settings.voice && (REC.has(id) || GEN.has(id)));
@@ -638,6 +645,7 @@ const MARK = {
  <ellipse cx="0" cy="2" rx="26" ry="5" fill="#000" opacity=".25"/>
  <path d="M14,-12 Q48,-8 44,-34 Q40,-52 56,-54" stroke="#9c8aa6" stroke-width="3.5" fill="none" stroke-linecap="round"/>
  <ellipse cx="-9" cy="-3" rx="9" ry="4.5" fill="#e9a9b6"/><ellipse cx="9" cy="-3" rx="9" ry="4.5" fill="#e9a9b6"/>
+ <path class="mcape" d="M-17,-64 Q-40,-36 -44,-2 Q0,8 44,-2 Q40,-36 17,-64Z" fill="none"/><g class="mcapep"></g>
  <ellipse cx="0" cy="-30" rx="17" ry="24" fill="#a99bb3"/>
  <g class="mdressg">${dressInner('apron')}</g>
  <g class="sew marm"><path d="M12,-46 Q26,-40 28,-28" stroke="#a99bb3" stroke-width="6" stroke-linecap="round" fill="none"/><line x1="28" y1="-28" x2="36" y2="-42" stroke="#e7ebf3" stroke-width="1.6"/></g>
@@ -851,7 +859,7 @@ SCENES.forest = (o = {}) => {
 <path d="M470,1200 Q760,1010 680,850 L700,850 Q800,1010 650,1200Z" fill="#aab5e0" opacity=".5"/>${glitter(R, tr)}`);
   const cl = L(1, '');
   addChar(cl, 'ugo', 450, 1150, .82);
-  const m = addChar(cl, 'mille', 600, 1162, .9); setDress(m.el, o.dress || 'apron'); m.el.querySelector('.marm').classList.remove('sew');
+  const m = addChar(cl, 'mille', 600, 1162, .9); setDress(m.el, o.dress || 'apron'); m.el.querySelector('.marm').classList.remove('sew'); if (o.cape) setCape(m.el, o.cape);
   addChar(cl, 'pip', 525, 1140, .82);
   let fg = ''; for (const [x, hh] of [[140, 760], [260, 560], [-40, 820], [1040, 720], [1160, 860], [930, 520]]) fg += pine(x, 1280, hh, '#0b0f2c', '#7f8bc4');
   L(1.2, fg);
@@ -911,6 +919,8 @@ async function pipWave() {
 }
 svg.addEventListener('pointerdown', e => {
   A.init();
+  const fsp = FIND && e.target.closest && e.target.closest('.fspot');
+  if (fsp) { findHit(fsp); return; }
   const onPip = e.target.closest && e.target.closest('.ch-pip');
   if (onPip) { pipWave(); if (interact.pip && !interact.hi) { interact.hi = true; side1('hej'); } }
   spawnSparks(e.clientX, e.clientY, onPip ? 22 : 10, { c: Math.random() < .5 ? 'g' : 'w' }); A.sparkle();
@@ -1216,14 +1226,285 @@ async function roofOwl() {
   await say1('ja');
 }
 
-const DAYS = { 1: day1 };
+/* =========================================================
+   DAG 2 – Sporet i sneen
+   ========================================================= */
+MARK.raev = () => `<g class="bob2">
+ <ellipse cx="0" cy="2" rx="48" ry="6" fill="#000" opacity=".25"/>
+ <path d="M-30,-30 Q-84,-36 -92,-84 Q-74,-64 -52,-58 Q-36,-52 -26,-40Z" fill="#d9692f"/>
+ <path d="M-92,-84 Q-84,-66 -72,-64 Q-80,-74 -92,-84Z" fill="#f4efe6"/>
+ <rect x="-24" y="-24" width="8" height="24" rx="3" fill="#3a2420"/><rect x="-11" y="-24" width="8" height="24" rx="3" fill="#3a2420"/>
+ <rect x="12" y="-24" width="8" height="24" rx="3" fill="#3a2420"/><rect x="24" y="-24" width="8" height="24" rx="3" fill="#3a2420"/>
+ <ellipse cx="0" cy="-34" rx="38" ry="18" fill="#d9692f"/>
+ <ellipse cx="28" cy="-36" rx="12" ry="14" fill="#f4efe6"/>
+ <path d="M28,-62 L30,-84 L42,-66Z M40,-64 L48,-84 L52,-62Z" fill="#c4561f"/><path d="M31,-66 L32,-78 L38,-67Z M43,-65 L47,-77 L49,-64Z" fill="#3a2420"/>
+ <path d="M20,-48 Q28,-72 48,-68 Q64,-62 74,-50 Q58,-44 40,-42Z" fill="#d9692f"/>
+ <path d="M40,-44 Q58,-46 74,-50 Q62,-38 44,-38Z" fill="#f4efe6"/>
+ <circle cx="74" cy="-50" r="3.8" fill="#2a1d1d"/>
+ <g class="blink"><ellipse cx="50" cy="-59" rx="2.5" ry="3.2" fill="#2a1d1d"/></g>
+</g>`;
+MARK.egern = () => `<g class="bob3">
+ <ellipse cx="4" cy="2" rx="22" ry="4" fill="#000" opacity=".25"/>
+ <path d="M-6,-10 Q-42,-10 -40,-48 Q-38,-78 -10,-76 Q-26,-62 -22,-46 Q-18,-24 -2,-20Z" fill="#8f5a38"/>
+ <path d="M-30,-60 Q-24,-70 -14,-72" stroke="#d98a5c" stroke-width="3" fill="none" stroke-linecap="round"/>
+ <ellipse cx="6" cy="-22" rx="13" ry="18" fill="#c0703f"/><ellipse cx="10" cy="-20" rx="7" ry="11" fill="#f0dcc0"/>
+ <circle cx="10" cy="-44" r="11" fill="#c0703f"/>
+ <path d="M3,-52 L3,-63 L10,-54Z M12,-54 L17,-64 L19,-52Z" fill="#a85a32"/>
+ <g class="blink"><circle cx="14" cy="-46" r="2.3" fill="#22181f"/></g><circle cx="21" cy="-43" r="1.7" fill="#22181f"/>
+ <circle cx="16" cy="-28" r="3.5" fill="#a85a32"/><ellipse cx="7" cy="-2" rx="8" ry="3.5" fill="#a85a32"/>
+</g>`;
+const CAPES = {
+  rod: { fill: '#b8323a', pat: () => '<path d="M-14,-58 Q0,-52 14,-58" stroke="#f2c35b" stroke-width="2" fill="none"/>' },
+  hvid: { fill: '#eef2fb', pat: () => '<path d="M-38,-4 Q0,6 38,-4" stroke="#d6def0" stroke-width="5" fill="none"/>' },
+  lilla: { fill: '#6b4aa8', pat: () => [[-24, -16], [-10, -36], [12, -24], [26, -12], [-28, -8], [0, -6]].map(([x, y], i) => `<path d="${starD(x, y, 3.2)}" fill="#f2c35b" class="tw" style="animation-delay:${-i * .4}s"/>`).join('') }
+};
+function setCape(el, k) { if (!CAPES[k]) return; el.querySelector('.mcape').setAttribute('fill', CAPES[k].fill); el.querySelector('.mcapep').innerHTML = CAPES[k].pat(); }
+ICON.cape = k => `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="${{ rod: '#4a1c22', hvid: '#2c3a66', lilla: '#2a1e48' }[k]}"/><g transform="translate(50 82) scale(1.05)"><path d="M-14,-58 Q-34,-34 -38,-4 Q0,6 38,-4 Q34,-34 14,-58Z" fill="${CAPES[k].fill}"/>${CAPES[k].pat()}<path d="M-12,-58 Q0,-66 12,-58" stroke="#f2c35b" stroke-width="2.5" fill="none"/></g></svg>`;
+ICON.raev = `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#2f5b4c"/><g transform="translate(46 80) scale(.62)">${MARK.raev()}</g></svg>`;
+ICON.egern = `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#2f5b4c"/><g transform="translate(52 84) scale(1)">${MARK.egern()}</g></svg>`;
+
+/* Find stjernestøvet: tryk på de svagt glimtende steder i sneen */
+let FIND = null;
+function findGame(layer, spots) {
+  return new Promise(res => {
+    pend.add(res);
+    const g = document.createElementNS(SVGNS, 'g'); layer.appendChild(g);
+    g.innerHTML = spots.map(([x, y], i) => `<g class="fspot" data-i="${i}" data-x="${x}" data-y="${y}"><circle cx="${x}" cy="${y}" r="75" fill="#fff" opacity="0"/><g class="fsh"><circle cx="${x}" cy="${y}" r="34" fill="url(#sglow)" opacity=".45" class="glowp"/><path class="tw" d="${sparkD(x, y, 16)}" fill="#fff6c8"/><path class="tw" style="animation-delay:-1.2s" d="${sparkD(x + 24, y - 14, 9)}" fill="#fff6c8"/></g></g>`).join('');
+    const bar = $('#findBar'); bar.innerHTML = spots.map(() => `<span>${ICON.star}</span>`).join(''); bar.hidden = false;
+    FIND = { found: new Set(), n: spots.length, g, done: () => { FIND = null; bar.hidden = true; pend.delete(res); res(); } };
+  }).then(chk);
+}
+function findHit(el) {
+  const i = el.dataset.i; if (FIND.found.has(i)) return;
+  FIND.found.add(i);
+  const x = +el.dataset.x, y = +el.dataset.y;
+  el.querySelector('.fsh').innerHTML = `<circle cx="${x}" cy="${y}" r="60" fill="url(#sglow)"/><path d="${starD(x, y, 22)}" fill="url(#gold)"/>`;
+  const r = el.getBoundingClientRect(); spawnSparks(r.left + r.width / 2, r.top + r.height / 2, 34, { spread: 300, up: 120 });
+  A.chime();
+  $('#findBar').children[FIND.found.size - 1]?.classList.add('on');
+  if (FIND.found.size >= FIND.n) { const f = FIND; setTimeout(() => { if (FIND === f) f.done(); }, 1200); }
+}
+
+SCENES.forest2 = (o = {}) => {
+  const R = rng(66);
+  L(0, `<rect x="-900" y="-900" width="3000" height="2900" fill="url(#sky)"/>` + starsSVG(R, 120, -700, 1900, -800, 500));
+  const h1 = hills(R, -900, 2100, 640, 16, '#262e6a'); let t1 = '';
+  for (let x = -880; x < 2100; x += 22 + R() * 18) t1 += pine(x, h1.at(x) + 10, 160 + R() * 120, '#1f2760', R() < .7 ? '#56609e' : null);
+  L(.2, h1.svg + t1);
+  const h2 = hills(R, -900, 2100, 820, 18, '#36408a'); let t2 = '';
+  for (let x = -880; x < 2100; x += 50 + R() * 40) { if (x > 420 && x < 780) continue; t2 += pine(x, h2.at(x) + 14, 260 + R() * 160, '#171d4c', '#7f8bc8'); }
+  L(.5, h2.svg + t2 + `<ellipse cx="600" cy="860" rx="1300" ry="70" fill="#b8c4f0" opacity=".1"/>`);
+  let mounds = ''; for (const [x, y, rx] of [[300, 1060, 140], [880, 1070, 160], [600, 1130, 220]]) mounds += `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${rx * .22}" fill="#c8d2f0"/>`;
+  const trail = []; for (let i = 0; i < 14; i++) { const t = i / 13; trail.push([600 - 40 * t + (i % 2 ? 10 : -10), 1210 - t * 180, 7 - 4 * t]); }
+  L(1, `<path d="M-900,1000 Q600,960 2100,1000 L2100,1800 L-900,1800Z" fill="url(#snowG)"/>
+<path d="M520,1050 Q530,800 548,560 Q560,380 520,260 Q590,300 600,200 Q620,300 690,250 Q650,380 660,560 Q676,800 700,1050Z" fill="#2b2244"/>
+<path d="M520,1050 Q470,1040 430,1062 Q490,1030 540,1020Z M700,1050 Q750,1040 790,1066 Q730,1030 680,1020Z" fill="#2b2244"/>
+<path d="M548,560 Q440,500 360,520 M560,440 Q470,360 380,370 M652,520 Q760,460 850,480 M648,400 Q740,330 820,340" stroke="#2b2244" stroke-width="26" stroke-linecap="round" fill="none"/>
+<path d="M360,512 Q440,490 548,548 M380,362 Q470,350 560,430 M850,472 Q760,450 652,510 M820,332 Q740,320 648,390" stroke="#dfe6f8" stroke-width="9" stroke-linecap="round" fill="none"/>
+<ellipse cx="604" cy="760" rx="30" ry="44" fill="#120d22"/><path d="M574,752 Q604,716 634,752" stroke="#dfe6f8" stroke-width="6" fill="none"/>
+<path d="M528,560 Q600,520 672,560" stroke="#dfe6f8" stroke-width="10" fill="none" stroke-linecap="round"/>
+${mounds}${glitter(R, trail)}`);
+  const cl = L(1, '');
+  const e = addChar(cl, 'egern', 604, 830, .9); e.el.setAttribute('opacity', '0');
+  const r = addChar(cl, 'raev', 820, 1030, 1); r.el.setAttribute('opacity', '0'); r.flip = true; r.set();
+  addChar(cl, 'ugo', 380, 1050, .9);
+  const m = addChar(cl, 'mille', 530, 1062, 1); setDress(m.el, o.dress || 'apron'); m.el.querySelector('.marm').classList.remove('sew');
+  addChar(cl, 'pip', 460, 1056, .95);
+  let fg = ''; for (const [x, hh] of [[60, 820], [180, 600], [1140, 860], [1020, 560]]) fg += pine(x, 1300, hh, '#0b0f2c', '#7f8bc4');
+  L(1.2, fg);
+  return .7;
+};
+
+SCENES.lake = (o = {}) => {
+  const R = rng(77);
+  L(0, `<rect x="-900" y="-900" width="3000" height="2900" fill="url(#sky)"/>` + starsSVG(R, 170, -700, 1900, -800, 620) + moonSVG(700, 210, 50));
+  L(.12, mountains(R, -900, 2100, 560, 100, 170, '#2c3270', '#8790c8'));
+  let shore = ''; for (let x = -880; x < 2100; x += 24 + R() * 22) shore += pine(x, 742 + R() * 10, 70 + R() * 70, '#141a40', R() < .5 ? '#5d68a6' : null);
+  L(.35, `<circle cx="920" cy="700" r="150" fill="url(#sglow)" opacity=".55" class="glowp"/>` + shore);
+  const tr = []; for (let i = 0; i < 30; i++) { const t = i / 29, u = 1 - t; const x = u * u * 520 + 2 * u * t * 640 + t * t * 900, y = u * u * 1150 + 2 * u * t * 900 + t * t * 762; tr.push([x + (i % 2 ? 8 : -8) * u, y, 3 + 6 * u]); }
+  let prints = ''; for (let i = 0; i < 12; i++) { const t = i / 11, u = 1 - t; const x = u * u * 640 + 2 * u * t * 780 + t * t * 960, y = u * u * 1160 + 2 * u * t * 920 + t * t * 768; const rr = 6 + 16 * u, side = i % 2 ? 1 : -1; prints += `<ellipse cx="${f1(x + side * rr * 1.1)}" cy="${f1(y)}" rx="${f1(rr)}" ry="${f1(rr * .55)}" fill="#7d8cc4"/><ellipse cx="${f1(x + side * rr * 1.1)}" cy="${f1(y - rr * .1)}" rx="${f1(rr * .7)}" ry="${f1(rr * .35)}" fill="#5f6ea8"/>`; }
+  let sheen = ''; for (let i = 0; i < 9; i++) { const y = 800 + i * 42; sheen += `<path d="M${f1(-200 + R() * 600)},${y} l${f1(300 + R() * 500)},${f1(-14 - R() * 10)}" stroke="#fff" stroke-opacity=".12" stroke-width="3" stroke-linecap="round"/>`; }
+  L(.8, `<linearGradient id="ice" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4c5c9c"/><stop offset="1" stop-color="#8ea1da"/></linearGradient>
+<path d="M-900,750 Q600,724 2100,750 L2100,1200 L-900,1200Z" fill="url(#ice)"/>
+<path d="M676,760 Q700,950 690,1180 L712,1180 Q722,950 726,760Z" fill="#fff" opacity=".22"/>${sheen}${prints}${glitter(R, tr)}`);
+  L(1, `<path d="M-900,1150 Q200,1110 560,1160 T2100,1150 L2100,1800 L-900,1800Z" fill="url(#snowG)"/>`);
+  const cl = L(1, '');
+  addChar(cl, 'ugo', 400, 1175, .9);
+  const m = addChar(cl, 'mille', 550, 1190, 1); setDress(m.el, o.dress || 'apron'); if (o.cape) setCape(m.el, o.cape); m.el.querySelector('.marm').classList.remove('sew');
+  addChar(cl, 'pip', 475, 1182, .95);
+  let fg = ''; for (const [x, hh] of [[20, 760], [140, 520], [1180, 820], [1060, 540]]) fg += pine(x, 1320, hh, '#0b0f2c', '#7f8bc4');
+  L(1.2, fg);
+  return .5;
+};
+
+regLines(2, [
+  ['I går'],
+  ['r1', 'n', 'I går forsvandt den store julestjerne fra Nisseland. Pip, musen Mille og uglen Ugo fulgte et spor af stjernestøv ind i den store skov.'],
+  ['r_ske', 'pip', 'Jeg har stadig teskeen i lommen. Man ved aldrig, hvornår man skal kælke igen!'],
+  ['r_ugo', 'ugo', 'Hu-hu! Sikke en flyvetur vi havde i går, Pip.'],
+  ['Skoven'],
+  ['s1', 'n', 'Skoven var stille og mørk. Sneen knirkede under deres fødder, og træerne var så høje, at de næsten rørte ved stjernerne.'],
+  ['s2', 'mille', 'Uh, det er godt nok mørkt herinde.'],
+  ['s3', 'pip', 'Bare rolig, Mille. Vi følger bare glimmeret.'],
+  ['s4', 'n', 'Men ved et stort, gammelt træ stoppede sporet. Det havde sneet i nat, og sneen havde dækket alt stjernestøvet.'],
+  ['s5', 'pip', 'Åh nej! Sporet er væk!'],
+  ['s6', 'ugo', 'Hu-hu. Vi må have hjælp fra nogen, der kender skoven.'],
+  ['s7', 'n', 'Lige da kiggede to dyr frem bag træet. En rød ræv med en lang, busket hale, og et lille, nysgerrigt egern.'],
+  ['s8', 'n', 'Theo, hvem skal hjælpe Pip med at finde sporet?'],
+  ['s9', 'n', 'Ræven?'],
+  ['s10', 'n', 'Eller egernet?'],
+  ['Hvis Theo vælger ræven'],
+  ['f1', 'n', 'Ræven satte snuden ned i sneen og snusede. Snif, snif, snif.'],
+  ['f2', 'raev', 'Jeg kan dufte stjernestøv! Det ligger lige her under sneen.'],
+  ['f3', 'n', 'Kan du hjælpe ræven? Tryk på sneen, der hvor det glimter, og find stjernestøvet!'],
+  ['f4', 'raev', 'Flot klaret! Sporet fører ned mod den frosne sø.'],
+  ['Hvis Theo vælger egernet'],
+  ['e1', 'n', 'Egernet løb op ad det store træ, helt op til toppen. Hop, hop, hop!'],
+  ['e2', 'egern', 'Jeg kan se noget, der glimter! Langt væk, nede ved den frosne sø!'],
+  ['e3', 'n', 'Egernet kastede kogler ned i sneen for at vise vejen. Kan du hjælpe? Tryk på sneen, der hvor det glimter!'],
+  ['e4', 'egern', 'Flot klaret! Følg glimmeret ned til søen.'],
+  ['Begge veje'],
+  ['b1', 'pip', 'Tusind tak for hjælpen!'],
+  ['b2', 'n', 'Og så gik de videre gennem skoven.'],
+  ['Kulden'],
+  ['k1', 'n', 'Jo længere de gik, jo koldere blev det. Mille begyndte at ryste.'],
+  ['k2', 'mille', 'Brrr! Min kjole er fin, men den er ikke særlig varm.'],
+  ['k3', 'ugo', 'Hu-hu. Heldigvis har du jo altid nål og tråd med, Mille.'],
+  ['k4', 'n', 'Mille fandt sin lille sytaske frem. Hun ville sy en varm kappe. Freja, hvilken kappe skal Mille have?'],
+  ['k5', 'n', 'Den røde fløjlskappe?'],
+  ['k6', 'n', 'Den hvide pelskappe?'],
+  ['k7', 'n', 'Eller den lilla stjernekappe?'],
+  ['kp_rod', 'n', 'Mille syede så hurtigt, at nålen glimtede. Nu havde hun en blød, rød fløjlskappe.'],
+  ['kp_hvid', 'n', 'Mille syede så hurtigt, at nålen glimtede. Nu havde hun en hvid pelskappe, så blød som nyfalden sne.'],
+  ['kp_lilla', 'n', 'Mille syede så hurtigt, at nålen glimtede. Nu havde hun en lilla kappe med små, gyldne stjerner.'],
+  ['k8', 'mille', 'Ahh, nu er jeg dejlig varm. Kom, lad os gå!'],
+  ['Søen'],
+  ['l1', 'n', 'Lidt efter kom de ud af skoven. Foran dem lå den store, frosne sø. Isen skinnede i måneskinnet.'],
+  ['l2', 'n', 'Og hen over isen gik der et spor af stjernestøv, helt over til den anden side.'],
+  ['l3', 'pip', 'Se! Der er noget, der lyser derovre!'],
+  ['l4', 'n', 'Men ved siden af glimmeret var der også nogle andre spor. Store, runde fodspor i sneen.'],
+  ['l5', 'ugo', 'Hu-hu. Hvem mon har så store, runde fødder?'],
+  ['l6', 'n', 'Det finder vi ud af i morgen …']
+]);
+const say2 = k => sayId('d2.' + k);
+
+const DAY2 = [
+  async P => {
+    /* -- Det gamle træ -- */
+    const dress = progress[1]?.freja || 'apron';
+    await scene('forest2', { cam: [560, 900, 1000], dress });
+    camTo(560, 860, 940, 9000, E.s);
+    await say2('r1');
+    const t1 = progress[1]?.theo;
+    if (t1 === 'ske') await say2('r_ske'); else if (t1 === 'ugo') await say2('r_ugo');
+    await say2('s1');
+    await say2('s2');
+    await say2('s3');
+    await say2('s4');
+    await say2('s5');
+    await say2('s6');
+    const { raev, egern } = C;
+    raev.fade(1, 700); raev.to(735, 1030, 900, { ease: E.o });
+    egern.fade(1, 700); await egern.to(604, 800, 700, { hop: 16, ease: E.o });
+    await say2('s7');
+    await say2('s8');
+    const c = await choice('theo', [
+      { id: 'raev', label: 'Ræven', say: 'd2.s9', icon: ICON.raev },
+      { id: 'egern', label: 'Egernet', say: 'd2.s10', icon: ICON.egern }
+    ]);
+    P.theo = c; progress[2] = P; saveProgress();
+  },
+  async P => {
+    /* -- Hjælperen finder sporet -- */
+    if (!C.raev) { await scene('forest2', { cam: [560, 860, 940], dress: progress[1]?.freja || 'apron' }); C.raev.fade(1, 10); C.egern.fade(1, 10); C.raev.x = 735; C.raev.set(); C.egern.y = 800; C.egern.set(); }
+    const layer = C.pip.el.parentNode;
+    const spots = [[470, 1150], [640, 1105], [780, 1160]];
+    if (P.theo === 'raev') {
+      const r = C.raev; C.egern.fade(0, 600);
+      camTo(620, 960, 900, 2000);
+      await say2('f1');
+      await r.to(660, 1110, 1400, { hop: 6, steps: 5, ease: E.lin });
+      await say2('f2');
+      await say2('f3');
+    } else {
+      const e = C.egern; C.raev.fade(0, 600);
+      await say2('e1');
+      camTo(600, 560, 1100, 2400);
+      await e.to(612, 680, 700, { hop: 14, steps: 3, ease: E.lin });
+      await e.to(600, 545, 800, { hop: 12, steps: 3, ease: E.lin });
+      await say2('e2');
+      camTo(620, 960, 900, 2000);
+      const cones = spots.map(([x, y]) => { const g = document.createElementNS(SVGNS, 'g'); g.innerHTML = `<ellipse rx="9" ry="13" fill="#7a4a2a"/><path d="M-7,-4 h14 M-8,3 h16" stroke="#5a341c" stroke-width="2"/>`; layer.appendChild(g); return { g, x, y }; });
+      await tween(1300, t => cones.forEach((c, i) => { const tt = Math.min(1, Math.max(0, t * 1.4 - i * .2)); c.g.setAttribute('transform', `translate(${f1(600 + (c.x + 40 - 600) * tt)} ${f1(545 + (c.y - 30 - 545) * tt * tt)}) rotate(${f1(tt * 300)})`); }), E.lin);
+      A.pop();
+      await say2('e3');
+    }
+    let done = false;
+    const game = findGame(layer, spots).then(() => done = true);
+    await Promise.race([game, wait(30000)]);
+    if (!done && FIND) FIND.done();
+    await say2(P.theo === 'raev' ? 'f4' : 'e4');
+    pipWave(); await say2('b1');
+    await say2('b2');
+  },
+  async P => {
+    /* -- Kulden og kappen -- */
+    await scene('forest', { cam: [540, 1030, 800], dress: progress[1]?.freja || 'apron' });
+    snowTarget = 1;
+    const m = C.mille;
+    await say2('k1');
+    await tween(900, t => { m.r = Math.sin(t * Math.PI * 10) * 4; m.set(); }, E.lin); m.r = 0; m.set();
+    await say2('k2');
+    await say2('k3');
+    await say2('k4');
+    const c = await choice('freja', [
+      { id: 'rod', label: 'Rød fløjl', say: 'd2.k5', icon: ICON.cape('rod') },
+      { id: 'hvid', label: 'Hvid pels', say: 'd2.k6', icon: ICON.cape('hvid') },
+      { id: 'lilla', label: 'Lilla stjerner', say: 'd2.k7', icon: ICON.cape('lilla') }
+    ]);
+    P.freja = c; progress[2] = P; saveProgress();
+    A.whoosh(.9, .15);
+    let swapped = false;
+    await tween(1300, t => {
+      m.sx = Math.cos(t * Math.PI * 4); m.set();
+      if (!swapped && t > .5) { swapped = true; setCape(m.el, c); const [x, y] = m.center(); spawnSparks(x, y, 40, { spread: 360, up: 120, c: c === 'hvid' ? 'w' : c === 'rod' ? 'p' : 'g' }); A.chime(); }
+    }, E.io);
+    m.sx = 1; m.set();
+    await say2('kp_' + c);
+    await say2('k8');
+    camTo(650, 800, 760, 9000, E.s);
+    await Promise.all([C.pip.to(668, 868, 8000, { s: .3, hop: 6, steps: 12, ease: E.s }), C.mille.to(700, 872, 8300, { s: .32, hop: 5, steps: 13, ease: E.s }), C.ugo.to(640, 864, 8500, { s: .3, hop: 6, steps: 11, ease: E.s })]);
+  },
+  async P => {
+    /* -- Den frosne sø -- */
+    await scene('lake', { cam: [520, 1000, 1000], dress: progress[1]?.freja || 'apron', cape: P.freja });
+    camTo(640, 940, 1050, 12000, E.s);
+    await say2('l1');
+    await say2('l2');
+    pipWave(); await say2('l3');
+    await say2('l4');
+    await say2('l5');
+    await say2('l6');
+  }
+];
+async function day2(from = 0) {
+  const P = progress[2] = Object.assign({}, progress[2] || {});
+  await titleCard('2. december', 'Sporet i sneen');
+  for (let i = from; i < DAY2.length; i++) { P.at = i; progress[2] = P; saveProgress(); await DAY2[i](P); }
+  delete P.at; P.done = true; progress[2] = P; saveProgress();
+  showEnd(3);
+}
+
+const DAYS = { 1: day1, 2: day2 };
 
 /* =========================================================
    Afspilning, slutkort og kalender
    ========================================================= */
 let wakeLock = null;
+let CUR_DAY = 1;
 async function playDay(n, from = 0) {
-  abortAll(); resetPause(); ACTIVE = RUN; $('#resume').hidden = true;
+  abortAll(); resetPause(); ACTIVE = RUN; $('#resume').hidden = true; CUR_DAY = n; C = {};
+  if (FIND) { FIND.g.remove(); FIND = null; $('#findBar').hidden = true; }
   A.init(); V.pick();
   $('#cal').hidden = true; $('#grainCal').hidden = true; $('#story').hidden = false;
   $('#end').classList.remove('show'); $('#choice').hidden = true; $('#cont').hidden = true; hideSub();
@@ -1253,7 +1534,7 @@ function resetPause() {
 document.body.appendChild($('#pause')); /* uden for #story, så den ligger over overgangene */
 $('#pzBtn').onclick = () => { A.init(); setPaused(true); };
 $('#pzPlay').onclick = () => setPaused(false);
-$('#pzRestart').onclick = () => playDay(1, 0);
+$('#pzRestart').onclick = () => playDay(CUR_DAY, 0);
 $('#pzHome').onclick = () => goHome();
 document.addEventListener('visibilitychange', () => { if (document.hidden && !$('#story').hidden && !$('#end').classList.contains('show')) setPaused(true); });
 /* Spørg om I vil fortsætte, når en dag er påbegyndt */
@@ -1275,7 +1556,7 @@ function goHome() {
   $('#story').hidden = true; $('#cal').hidden = false; $('#grainCal').hidden = false; veil(0); snowTarget = 0;
   renderCal();
 }
-$('#home').onclick = goHome; $('#toCal').onclick = goHome; $('#again').onclick = () => playDay(1, 0);
+$('#home').onclick = goHome; $('#toCal').onclick = goHome; $('#again').onclick = () => playDay(CUR_DAY, 0);
 function updSnd() { $('#sndWave').style.opacity = settings.sound ? 1 : .15; }
 $('#snd').onclick = () => { settings.sound = !settings.sound; saveSettings(); A.init(); A.setOn(settings.sound); A.music(settings.sound); updSnd(); };
 updSnd();
@@ -1289,7 +1570,7 @@ function renderCal() {
     const b = document.createElement('button'); const done = progress[n]?.done; const has = !!DAYS[n]; const open = isOpen(n) && has;
     b.className = `door c${(i + Math.floor(i / 4)) % 4} ` + (done ? 'done' : open ? 'avail' : 'locked');
     b.setAttribute('aria-label', `Låge ${n}`);
-    if (done) { const dc = DR[progress[n].freja]?.fill || '#f2c35b'; b.innerHTML = `<span class="num">${n}</span>${ICON.star}<span class="dot" style="background:${dc};color:${dc}"></span>`; }
+    if (done) { const fr = progress[n].freja; const dc = DR[fr]?.fill || CAPES[fr]?.fill || '#f2c35b'; b.innerHTML = `<span class="num">${n}</span>${ICON.star}<span class="dot" style="background:${dc};color:${dc}"></span>`; }
     else b.innerHTML = `<span class="num">${n}</span>` + (open ? `<span class="hat">${ICON.hat}</span>` : '');
     b.addEventListener('click', () => {
       A.init();
@@ -1307,7 +1588,7 @@ renderCal();
 /* =========================================================
    Optagestudie
    ========================================================= */
-const ROLE = { n: 'Fortæller', pip: 'Pip', mille: 'Mille', ugo: 'Ugo' };
+const ROLE = { n: 'Fortæller', pip: 'Pip', mille: 'Mille', ugo: 'Ugo', raev: 'Ræven', egern: 'Egernet' };
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const ST = { stream: null, mode: null, mr: null, recId: null, t0: 0, timer: null };
 async function openStudio() {
@@ -1329,13 +1610,13 @@ function closeStudio() {
   $('#studio').hidden = true;
 }
 function renderStudio() {
-  const lines = Object.values(LINES).filter(l => l.day === 1);
+  const lines = Object.values(LINES);
   const done = lines.filter(l => REC.has(l.id)).length;
   $('#stProg').textContent = `${done} af ${lines.length} replikker er indtalt`;
   $('#stBar').style.width = (done / lines.length * 100) + '%';
   let html = '', g = null;
   for (const l of lines) {
-    if (l.g !== g) { g = l.g; html += `<h3>${esc(g)}</h3>`; }
+    if (`${l.day}${l.g}` !== g) { g = `${l.day}${l.g}`; html += `<h3>Dag ${l.day}: ${esc(l.g)}</h3>`; }
     const has = REC.has(l.id), recing = ST.recId === l.id;
     html += `<div class="ln${recing ? ' recing' : ''}" data-id="${l.id}"><div class="ln-top"><span class="role r-${l.who}">${ROLE[l.who]}</span>${has ? '<span class="ok">Indtalt ✓</span>' : ''}</div>
 <p class="tx">${esc(l.text)}</p><div class="acts"><button class="b-rec">${recing ? 'Stop' : has ? 'Optag igen' : 'Optag'}</button>${has && !recing ? '<button class="b-play">Lyt</button><button class="b-del">Slet</button>' : ''}</div></div>`;
