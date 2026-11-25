@@ -418,7 +418,7 @@ const A = {
 const V = {
   ok: 'speechSynthesis' in window, voice: null, listed: false,
   pick() { if (!this.ok) return; const vs = speechSynthesis.getVoices(); this.listed = vs.length > 0; this.voice = vs.find(v => /^da/i.test(v.lang)) || null; },
-  roles: { n: { rate: .92, pitch: 1 }, pip: { rate: 1, pitch: 1.45 }, mille: { rate: 1.02, pitch: 1.75 }, ugo: { rate: .85, pitch: .6 }, raev: { rate: .95, pitch: 1.2 }, egern: { rate: 1.1, pitch: 1.8 } },
+  roles: { n: { rate: .92, pitch: 1 }, pip: { rate: 1, pitch: 1.45 }, mille: { rate: 1.02, pitch: 1.75 }, ugo: { rate: .85, pitch: .6 }, raev: { rate: .95, pitch: 1.2 }, egern: { rate: 1.1, pitch: 1.8 }, nanok: { rate: 1.05, pitch: 1.7 }, bjoernemor: { rate: .85, pitch: .9 }, rensdyr: { rate: .95, pitch: .8 }, mormor: { rate: .85, pitch: 1.1 }, ged: { rate: 1, pitch: 1.5 }, kat: { rate: .95, pitch: 1.6 } },
   canSpeak() { return this.ok && settings.voice && (this.voice || !this.listed); },
   est(text) { return 1100 + text.length * 66; },
   stop() { try { speechSynthesis.cancel(); } catch (e) {} stopRec(); },
@@ -441,7 +441,7 @@ const V = {
 };
 if (V.ok) { V.pick(); speechSynthesis.onvoiceschanged = () => V.pick(); }
 
-const NAMES = { pip: 'Pip', mille: 'Mille', ugo: 'Ugo', raev: 'Ræven', egern: 'Egernet' };
+const NAMES = { pip: 'Pip', mille: 'Mille', ugo: 'Ugo', raev: 'Ræven', egern: 'Egernet', nanok: 'Nanok', bjoernemor: 'Isbjørnemor', rensdyr: 'Rensdyret', mormor: 'Mormor Kanel', ged: 'Gerda', kat: 'Mis' };
 function showSub(text, who, id) {
   const s = $('#sub');
   const force = !V.canSpeak() && !(id && settings.voice && (REC.has(id) || GEN.has(id)));
@@ -530,9 +530,9 @@ class Ch {
   fade(op, dur = 600) { const a = +(this.el.getAttribute('opacity') ?? 1); return tween(dur, t => this.el.setAttribute('opacity', (a + (op - a) * t).toFixed(3)), E.lin); }
   center() { const r = this.el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }
 }
-function addChar(layer, kind, x, y, s = 1) {
+function addChar(layer, kind, x, y, s = 1, key = kind) {
   const g = document.createElementNS(SVGNS, 'g'); g.setAttribute('class', 'ch-' + kind); g.innerHTML = MARK[kind]();
-  layer.appendChild(g); return (C[kind] = new Ch(g, x, y, s));
+  layer.appendChild(g); return (C[key] = new Ch(g, x, y, s));
 }
 const veilEl = $('#veil');
 const veil = on => veilEl.classList.toggle('off', !on);
@@ -542,6 +542,7 @@ async function scene(name, o = {}) {
   const [x, y, w] = o.cam || [600, 600, 1200];
   cam0 = { x, y }; cam = { x, y, w }; camId++;
   snowTarget = SCENES[name](o) ?? 0; snowAmt = snowTarget;
+  if (o.look) applyLooks();
   applyCam();
   veil(0); await wait(820);
 }
@@ -630,8 +631,8 @@ const MARK = {
  <path d="M-28,-24 Q-33,-72 0,-80 Q33,-72 28,-24 Q0,-18 -28,-24Z" fill="#8391bd"/>
  <path d="M-28,-24 Q0,-18 28,-24 L27,-32 Q0,-26 -27,-32Z" fill="#6c79a6"/>
  <rect x="-27" y="-41" width="54" height="7" fill="#3b2a24"/><rect x="-5" y="-42" width="10" height="9" rx="2" fill="#e8c35a"/>
- <g><path d="M-24,-66 Q-36,-52 -32,-38" stroke="#8391bd" stroke-width="11" stroke-linecap="round" fill="none"/><circle cx="-32" cy="-36" r="6.5" fill="#f0c7a2"/></g>
- <g class="parm"><path d="M24,-66 Q36,-52 32,-38" stroke="#8391bd" stroke-width="11" stroke-linecap="round" fill="none"/><circle cx="32" cy="-36" r="6.5" fill="#f0c7a2"/></g>
+ <g><path d="M-24,-66 Q-36,-52 -32,-38" stroke="#8391bd" stroke-width="11" stroke-linecap="round" fill="none"/><circle class="phand" cx="-32" cy="-36" r="6.5" fill="#f0c7a2"/></g>
+ <g class="parm"><path d="M24,-66 Q36,-52 32,-38" stroke="#8391bd" stroke-width="11" stroke-linecap="round" fill="none"/><circle class="phand" cx="32" cy="-36" r="6.5" fill="#f0c7a2"/></g>
  <circle cx="0" cy="-92" r="19" fill="#f2c9a4"/>
  <circle cx="-11" cy="-87" r="4.5" fill="#ec9b8e" opacity=".7"/><circle cx="11" cy="-87" r="4.5" fill="#ec9b8e" opacity=".7"/>
  <path d="M-18,-90 Q-20,-62 0,-56 Q20,-62 18,-90 Q10,-82 0,-84 Q-10,-82 -18,-90Z" fill="#f5efe2"/>
@@ -648,20 +649,22 @@ const MARK = {
  <path class="mcape" d="M-17,-64 Q-40,-36 -44,-2 Q0,8 44,-2 Q40,-36 17,-64Z" fill="none"/><g class="mcapep"></g>
  <ellipse cx="0" cy="-30" rx="17" ry="24" fill="#a99bb3"/>
  <g class="mdressg">${dressInner('apron')}</g>
- <g class="sew marm"><path d="M12,-46 Q26,-40 28,-28" stroke="#a99bb3" stroke-width="6" stroke-linecap="round" fill="none"/><line x1="28" y1="-28" x2="36" y2="-42" stroke="#e7ebf3" stroke-width="1.6"/></g>
- <path d="M-12,-46 Q-24,-38 -24,-28" stroke="#a99bb3" stroke-width="6" stroke-linecap="round" fill="none"/>
+ <g class="sew marm"><path d="M12,-46 Q26,-40 28,-28" stroke="#a99bb3" stroke-width="6" stroke-linecap="round" fill="none"/><line x1="28" y1="-28" x2="36" y2="-42" stroke="#e7ebf3" stroke-width="1.6"/><circle class="mhand" cx="28" cy="-27" r="3.6" fill="#a99bb3"/></g>
+ <path d="M-12,-46 Q-24,-38 -24,-28" stroke="#a99bb3" stroke-width="6" stroke-linecap="round" fill="none"/><circle class="mhand" cx="-24" cy="-27" r="3.6" fill="#a99bb3"/>
+ <g class="mneck"></g>
  <circle cx="-15" cy="-84" r="12" fill="#a99bb3"/><circle cx="-15" cy="-84" r="7" fill="#f2b6c3"/>
  <circle cx="15" cy="-84" r="12" fill="#a99bb3"/><circle cx="15" cy="-84" r="7" fill="#f2b6c3"/>
  <path d="M-16,-68 Q-16,-82 0,-82 Q16,-82 16,-68 Q12,-56 0,-52 Q-12,-56 -16,-68Z" fill="#b8aac1"/>
  <g class="blink"><circle cx="-6" cy="-70" r="2.6" fill="#22181f"/><circle cx="6" cy="-70" r="2.6" fill="#22181f"/></g>
  <circle cx="0" cy="-60" r="3.2" fill="#e57f95"/>
  <path d="M-4,-61 L-18,-63 M-4,-59 L-17,-57 M4,-61 L18,-63 M4,-59 L17,-57" stroke="#efe9f3" stroke-width=".8" opacity=".8"/>
+ <g class="mbow"></g>
 </g>`,
   ugo: () => `<g class="bob3">
  <ellipse cx="0" cy="2" rx="30" ry="6" fill="#000" opacity=".25"/>
  <path d="M-14,0 l-6,4 M-14,0 l0,6 M-14,0 l6,4 M14,0 l-6,4 M14,0 l0,6 M14,0 l6,4" stroke="#e3a33b" stroke-width="3" stroke-linecap="round"/>
- <g class="wl"><path d="M-30,-78 Q-66,-50 -46,-12 Q-34,-30 -30,-78Z" fill="#5f4535"/></g>
- <g class="wr"><path d="M30,-78 Q66,-50 46,-12 Q34,-30 30,-78Z" fill="#5f4535"/></g>
+ <g class="wl"><path d="M-30,-78 Q-66,-50 -46,-12 Q-34,-30 -30,-78Z" fill="#5f4535"/><ellipse class="uhand" cx="-46" cy="-15" rx="7" ry="6" fill="none"/></g>
+ <g class="wr"><path d="M30,-78 Q66,-50 46,-12 Q34,-30 30,-78Z" fill="#5f4535"/><ellipse class="uhand" cx="46" cy="-15" rx="7" ry="6" fill="none"/></g>
  <path d="M-28,-92 L-34,-116 L-12,-98Z M28,-92 L34,-116 L12,-98Z" fill="#7d5c46"/>
  <ellipse cx="0" cy="-52" rx="38" ry="50" fill="#7d5c46"/>
  <ellipse cx="0" cy="-36" rx="24" ry="30" fill="#d6b68f"/>
@@ -1265,13 +1268,13 @@ ICON.egern = `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#2
 
 /* Find stjernestøvet: tryk på de svagt glimtende steder i sneen */
 let FIND = null;
-function findGame(layer, spots) {
+function findGame(layer, spots, onHit) {
   return new Promise(res => {
     pend.add(res);
     const g = document.createElementNS(SVGNS, 'g'); layer.appendChild(g);
     g.innerHTML = spots.map(([x, y], i) => `<g class="fspot" data-i="${i}" data-x="${x}" data-y="${y}"><circle cx="${x}" cy="${y}" r="75" fill="#fff" opacity="0"/><g class="fsh"><circle cx="${x}" cy="${y}" r="34" fill="url(#sglow)" opacity=".45" class="glowp"/><path class="tw" d="${sparkD(x, y, 16)}" fill="#fff6c8"/><path class="tw" style="animation-delay:-1.2s" d="${sparkD(x + 24, y - 14, 9)}" fill="#fff6c8"/></g></g>`).join('');
     const bar = $('#findBar'); bar.innerHTML = spots.map(() => `<span>${ICON.star}</span>`).join(''); bar.hidden = false;
-    FIND = { found: new Set(), n: spots.length, g, done: () => { FIND = null; bar.hidden = true; pend.delete(res); res(); } };
+    FIND = { found: new Set(), n: spots.length, g, onHit, done: () => { FIND = null; bar.hidden = true; pend.delete(res); res(); } };
   }).then(chk);
 }
 function findHit(el) {
@@ -1280,7 +1283,7 @@ function findHit(el) {
   const x = +el.dataset.x, y = +el.dataset.y;
   el.querySelector('.fsh').innerHTML = `<circle cx="${x}" cy="${y}" r="60" fill="url(#sglow)"/><path d="${starD(x, y, 22)}" fill="url(#gold)"/>`;
   const r = el.getBoundingClientRect(); spawnSparks(r.left + r.width / 2, r.top + r.height / 2, 34, { spread: 300, up: 120 });
-  A.chime();
+  A.chime(); try { FIND.onHit && FIND.onHit(+i); } catch (e) {}
   $('#findBar').children[FIND.found.size - 1]?.classList.add('on');
   if (FIND.found.size >= FIND.n) { const f = FIND; setTimeout(() => { if (FIND === f) f.done(); }, 1200); }
 }
@@ -1495,7 +1498,777 @@ async function day2(from = 0) {
   showEnd(3);
 }
 
-const DAYS = { 1: day1, 2: day2 };
+const DAYS_EXTRA = {};
+/* =========================================================
+   Fælles til dag 3+: figurer, pynt og hjælpere
+   ========================================================= */
+MARK.isbjorn = () => `<g class="bob2">
+ <ellipse cx="0" cy="2" rx="48" ry="6" fill="#000" opacity=".22"/>
+ <rect x="-34" y="-28" width="16" height="28" rx="7" fill="#dfe4f0"/><rect x="-14" y="-28" width="16" height="28" rx="7" fill="#e8ecf5"/>
+ <rect x="12" y="-28" width="16" height="28" rx="7" fill="#dfe4f0"/><rect x="30" y="-28" width="16" height="28" rx="7" fill="#e8ecf5"/>
+ <circle cx="-44" cy="-40" r="7" fill="#eef1f7"/>
+ <ellipse cx="0" cy="-36" rx="46" ry="28" fill="#f2f4fa"/>
+ <ellipse cx="-6" cy="-24" rx="34" ry="12" fill="#dde3f0" opacity=".6"/>
+ <circle cx="30" cy="-66" r="7" fill="#eef1f7"/><circle cx="30" cy="-66" r="3.5" fill="#cfd6e6"/>
+ <circle cx="50" cy="-68" r="7" fill="#eef1f7"/><circle cx="50" cy="-68" r="3.5" fill="#cfd6e6"/>
+ <circle cx="42" cy="-52" r="20" fill="#f6f8fc"/>
+ <ellipse cx="58" cy="-46" rx="13" ry="10" fill="#fbfcfe"/>
+ <ellipse cx="68" cy="-48" rx="4.5" ry="3.5" fill="#1f1a24"/>
+ <path d="M62,-41 q4,3 8,0" stroke="#1f1a24" stroke-width="1.5" fill="none"/>
+ <g class="blink"><circle cx="48" cy="-57" r="2.6" fill="#1f1a24"/></g>
+ <g class="bhat"></g>
+</g>`;
+MARK.rensdyr = () => `<g class="bob3">
+ <ellipse cx="0" cy="2" rx="50" ry="6" fill="#000" opacity=".22"/>
+ <path d="M-34,-60 L-38,0 M-20,-60 L-22,0 M24,-60 L26,0 M38,-60 L40,0" stroke="#5a3a26" stroke-width="8" stroke-linecap="round"/>
+ <path d="M-48,-74 q-10,-4 -8,8" stroke="#8a5a3a" stroke-width="7" stroke-linecap="round" fill="none"/>
+ <ellipse cx="0" cy="-70" rx="48" ry="22" fill="#8a5a3a"/>
+ <ellipse cx="-4" cy="-58" rx="34" ry="8" fill="#d9c3a5" opacity=".7"/>
+ <path d="M30,-80 Q42,-110 52,-118 L64,-112 Q56,-96 46,-74Z" fill="#8a5a3a"/>
+ <path d="M58,-128 Q54,-150 40,-160 M54,-140 Q46,-142 42,-150 M64,-128 Q70,-152 86,-160 M68,-142 Q78,-144 82,-150" stroke="#d9c3a5" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+ <ellipse cx="66" cy="-118" rx="18" ry="11" fill="#8a5a3a"/>
+ <circle cx="83" cy="-116" r="5" fill="#c8423a"/>
+ <g class="blink"><circle cx="66" cy="-122" r="2.4" fill="#1f1a24"/></g>
+ <path d="M30,-86 Q42,-70 30,-56" stroke="#c8423a" stroke-width="6" fill="none"/><circle cx="34" cy="-58" r="5" fill="#f2c35b"/>
+</g>`;
+MARK.kane = () => `<path d="M-70,-20 L60,-20 Q80,-20 84,-40 L84,-60 L70,-60 L70,-40 Q66,-34 56,-34 L-60,-34 Q-70,-50 -70,-70 L-84,-70 Q-84,-40 -70,-20Z" fill="#b8323a"/>
+ <path d="M-90,-8 Q-96,0 -84,0 L80,0 Q96,0 96,-16" stroke="#f2c35b" stroke-width="5" fill="none" stroke-linecap="round"/>
+ <path d="M-50,-20 L-50,0 M40,-20 L40,0" stroke="#f2c35b" stroke-width="4"/>`;
+MARK.mormor = () => `<g class="bob">
+ <ellipse cx="0" cy="2" rx="32" ry="6" fill="#000" opacity=".25"/>
+ <path d="M-30,0 Q-34,-60 -18,-78 L18,-78 Q34,-60 30,0Z" fill="#7a3b5a"/>
+ <path d="M-16,-2 Q-18,-50 -10,-70 L10,-70 Q18,-50 16,-2Z" fill="#f5efe2"/>
+ <path d="M-18,-74 Q-34,-58 -30,-44" stroke="#7a3b5a" stroke-width="10" stroke-linecap="round" fill="none"/><circle cx="-30" cy="-42" r="6" fill="#f0c7a2"/>
+ <path d="M18,-74 Q34,-58 30,-44" stroke="#7a3b5a" stroke-width="10" stroke-linecap="round" fill="none"/><circle cx="30" cy="-42" r="6" fill="#f0c7a2"/>
+ <circle cx="0" cy="-94" r="19" fill="#f2c9a4"/>
+ <path d="M-19,-96 Q-22,-118 0,-118 Q22,-118 19,-96 Q10,-108 0,-106 Q-10,-108 -19,-96Z" fill="#dcdce6"/>
+ <circle cx="-11" cy="-87" r="4.5" fill="#ec9b8e" opacity=".7"/><circle cx="11" cy="-87" r="4.5" fill="#ec9b8e" opacity=".7"/>
+ <g class="blink"><circle cx="-7" cy="-96" r="2" fill="#2a1b1f"/><circle cx="7" cy="-96" r="2" fill="#2a1b1f"/></g>
+ <circle cx="-7" cy="-96" r="6" fill="none" stroke="#5a4a3a" stroke-width="1.8"/><circle cx="7" cy="-96" r="6" fill="none" stroke="#5a4a3a" stroke-width="1.8"/><path d="M-1,-96 h2" stroke="#5a4a3a" stroke-width="1.8"/>
+ <circle cx="0" cy="-89" r="4.5" fill="#e0806e"/><path d="M-6,-82 q6,5 12,0" stroke="#a0564a" stroke-width="2" fill="none" stroke-linecap="round"/>
+ <path d="M-16,-110 Q-14,-136 10,-146 Q20,-140 22,-128 Q14,-130 10,-126 Q18,-118 16,-110 Q0,-116 -16,-110Z" fill="#d23f37"/>
+ <circle cx="22" cy="-128" r="5" fill="#f5efe2"/>
+</g>`;
+MARK.kat = () => `<g class="bob3">
+ <ellipse cx="0" cy="2" rx="26" ry="5" fill="#000" opacity=".22"/>
+ <path d="M-18,-6 Q-46,-4 -40,-30 Q-36,-44 -26,-40" stroke="#d98a4a" stroke-width="7" fill="none" stroke-linecap="round"/>
+ <ellipse cx="0" cy="-22" rx="20" ry="22" fill="#d98a4a"/>
+ <path d="M-12,-36 q4,6 0,12 M0,-40 q4,6 0,12 M12,-36 q4,6 0,12" stroke="#a8602c" stroke-width="3" fill="none"/>
+ <ellipse cx="6" cy="-16" rx="9" ry="12" fill="#f4e0c4"/>
+ <circle cx="6" cy="-50" r="15" fill="#d98a4a"/>
+ <path d="M-6,-58 L-8,-74 L4,-62Z M10,-62 L20,-74 L20,-56Z" fill="#d98a4a"/>
+ <g class="blink"><ellipse cx="1" cy="-52" rx="2.6" ry="3.4" fill="#3a3a1a"/><ellipse cx="13" cy="-52" rx="2.6" ry="3.4" fill="#3a3a1a"/></g>
+ <path d="M5,-45 l2,2 l2,-2Z" fill="#e57f95"/><path d="M-6,-44 h-10 M-6,-42 l-9,3 M20,-44 h10 M20,-42 l9,3" stroke="#fff" stroke-width=".9" opacity=".8"/>
+ <ellipse cx="-4" cy="-2" rx="7" ry="4" fill="#d98a4a"/><ellipse cx="12" cy="-2" rx="7" ry="4" fill="#d98a4a"/>
+</g>`;
+MARK.ged = () => `<g class="bob2">
+ <ellipse cx="0" cy="2" rx="38" ry="5" fill="#000" opacity=".22"/>
+ <path d="M-24,-34 L-26,0 M-12,-34 L-12,0 M14,-34 L14,0 M26,-34 L28,0" stroke="#e8e2d6" stroke-width="7" stroke-linecap="round"/>
+ <path d="M-26,0 v-3 M-12,0 v-3 M14,0 v-3 M28,0 v-3" stroke="#4a3a2a" stroke-width="7"/>
+ <ellipse cx="0" cy="-42" rx="34" ry="18" fill="#f4efe6"/>
+ <path d="M-34,-48 q-8,-6 -4,-14" stroke="#f4efe6" stroke-width="6" stroke-linecap="round" fill="none"/>
+ <path d="M22,-50 Q30,-70 44,-72 Q56,-70 58,-58 Q50,-48 34,-44Z" fill="#f4efe6"/>
+ <path d="M40,-72 Q36,-90 26,-92 M48,-72 Q48,-90 40,-94" stroke="#a8946e" stroke-width="4" stroke-linecap="round" fill="none"/>
+ <path d="M36,-70 l-12,-4 l8,8Z" fill="#e8e2d6"/>
+ <g class="blink"><ellipse cx="46" cy="-64" rx="2.2" ry="3" fill="#2a1d1d"/></g>
+ <path d="M50,-50 q-2,10 -6,14 q-2,-8 0,-14Z" fill="#e8e2d6"/>
+ <circle cx="57" cy="-58" r="2" fill="#a07a6a"/>
+ <path d="M20,-56 q0,10 6,14" stroke="#c8423a" stroke-width="3" fill="none"/><circle cx="26" cy="-40" r="4" fill="#f2c35b"/>
+</g>`;
+
+const HATS = {
+  kvast: '<path d="M21,-60 Q42,-90 63,-60Z" fill="#c8423a"/><rect x="20" y="-64" width="44" height="8" rx="4" fill="#f5efe2"/><circle cx="42" cy="-87" r="7.5" fill="#f5efe2"/>',
+  stribet: '<path d="M21,-60 Q42,-90 63,-60Z" fill="#f2c35b"/><path d="M25,-67 Q42,-72 59,-67" stroke="#c8423a" stroke-width="4.5" fill="none"/><path d="M30,-75 Q42,-79 54,-75" stroke="#6fb3d9" stroke-width="4" fill="none"/><path d="M36,-82 Q42,-84 48,-82" stroke="#2f8a5a" stroke-width="3.5" fill="none"/><rect x="20" y="-64" width="44" height="7" rx="3.5" fill="#7a4ab8"/>',
+  oerer: '<path d="M21,-60 Q42,-90 63,-60Z" fill="#8c6a4a"/><circle cx="29" cy="-78" r="7" fill="#8c6a4a"/><circle cx="29" cy="-78" r="3.5" fill="#d9b48a"/><circle cx="55" cy="-78" r="7" fill="#8c6a4a"/><circle cx="55" cy="-78" r="3.5" fill="#d9b48a"/><rect x="20" y="-64" width="44" height="7" rx="3.5" fill="#6a4e36"/>'
+};
+const setHat = (el, k) => { const h = el.querySelector('.bhat'); if (h && HATS[k]) h.innerHTML = HATS[k]; };
+const BOWS = { groen: '#5fd3a0', rosa: '#f29ac0', blaa: '#8cc8f2' };
+const bowSVG = c => `<path d="M17,-97 l-12,-7 l1,14Z M17,-97 l12,-7 l-1,14Z" fill="${c}"/><circle cx="17" cy="-97" r="3.4" fill="${c}"/><path d="M15,-95 l-3,8 M19,-95 l3,8" stroke="${c}" stroke-width="2.4" stroke-linecap="round"/>`;
+const setBow = (el, k) => { const b = el.querySelector('.mbow'); if (b && BOWS[k]) b.innerHTML = bowSVG(BOWS[k]); };
+const NECKS = {
+  perle: '<g fill="#fbf7ee">' + [-10, -7, -3.5, 0, 3.5, 7, 10].map(x => `<circle cx="${x}" cy="${f1(-53 + 7 * (1 - (x / 11) ** 2))}" r="1.9"/>`).join('') + '</g>',
+  stjerne: `<path d="M-11,-53 Q0,-44 11,-53" stroke="#f2c35b" stroke-width="1.3" fill="none"/><path d="${starD(0, -45, 4.6)}" fill="#f2c35b"/>`,
+  hjerte: '<path d="M-11,-53 Q0,-44 11,-53" stroke="#f2c35b" stroke-width="1.3" fill="none"/><path d="M0,-41 C-6,-45 -5,-50 -2.5,-50 C-1,-50 0,-48.5 0,-48.5 C0,-48.5 1,-50 2.5,-50 C5,-50 6,-45 0,-41Z" fill="#d23f4a"/>'
+};
+const setNeck = (el, k) => { const n = el.querySelector('.mneck'); if (n && NECKS[k]) n.innerHTML = NECKS[k]; };
+const MITTS = { rod: '#c8423a', gron: '#2f8a5a', gul: '#f2c35b' };
+const setMitt = (el, k) => el.querySelectorAll('.phand,.mhand,.uhand').forEach(h => { h.setAttribute('fill', MITTS[k]); if (h.classList.contains('mhand')) h.setAttribute('r', '4.6'); });
+function applyLooks() {
+  const p = n => progress[n]?.freja;
+  if (C.mille) { const el = C.mille.el; setDress(el, p(1) || 'apron'); if (p(2)) setCape(el, p(2)); if (p(4)) setBow(el, p(4)); if (p(5)) setNeck(el, p(5)); el.querySelector('.marm')?.classList.remove('sew'); }
+  if (p(6)) ['pip', 'mille', 'ugo'].forEach(k => C[k] && setMitt(C[k].el, p(6)));
+  if (C.nanok && p(3)) setHat(C.nanok.el, p(3));
+}
+async function spinChange(ch, fn, col = 'g') {
+  A.whoosh(.9, .15); let sw = false;
+  await tween(1300, t => { ch.sx = Math.cos(t * Math.PI * 4); ch.set(); if (!sw && t > .5) { sw = true; fn(); const [x, y] = ch.center(); spawnSparks(x, y, 40, { spread: 360, up: 120, c: col }); A.chime(); } }, E.io);
+  ch.sx = 1; ch.set();
+}
+async function findRace(layer, spots, onHit, ms = 40000) {
+  let done = false; const g = findGame(layer, spots, onHit).then(() => done = true);
+  await Promise.race([g, wait(ms)]); if (!done && FIND) FIND.done();
+}
+function focusCam(x, y, d) { const k = 1 - d; return [(x - cam0.x * k) / (1 - k), (y - cam0.y * k * .7) / (1 - k * .7)]; }
+function makeDay(n, date, title, chapters) {
+  return async (from = 0) => {
+    const P = progress[n] = Object.assign({}, progress[n] || {});
+    await titleCard(date, title);
+    for (let i = from; i < chapters.length; i++) { P.at = i; progress[n] = P; saveProgress(); await chapters[i](P); }
+    delete P.at; P.done = true; progress[n] = P; saveProgress();
+    showEnd(n + 1);
+  };
+}
+const pick = (n, P, key, v) => { P[key] = v; progress[n] = P; saveProgress(); };
+const circ = (bg, inner) => `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="${bg}"/>${inner}</svg>`;
+ICON.isbjorn = circ('#2b3a6b', `<g transform="translate(36 78) scale(.78)">${MARK.isbjorn()}</g>`);
+ICON.hat = k => circ('#2b3a6b', `<g transform="translate(-22 142) scale(1.7)">${MARK.isbjorn().replace('<g class="bhat"></g>', HATS[k])}</g>`);
+ICON.rensdyr = circ('#2f5b4c', `<g transform="translate(40 92) scale(.5)">${MARK.rensdyr()}</g>`);
+ICON.bjornride = circ('#2f5b4c', `<g transform="translate(46 84) scale(.62)">${MARK.isbjorn()}</g><g transform="translate(46 50) scale(.32)">${MARK.pip()}</g>`);
+ICON.ged = circ('#2f5b4c', `<g transform="translate(40 86) scale(.78)">${MARK.ged()}</g>`);
+ICON.kat = circ('#2f5b4c', `<g transform="translate(48 88) scale(1.05)">${MARK.kat()}</g>`);
+ICON.bro = circ('#2b3a6b', '<path d="M0,62 L28,62 L28,100 L0,100Z M72,60 L100,60 L100,100 L72,100Z" fill="#4a5490"/><path d="M28,62 Q50,50 72,60" stroke="#bfe0ff" stroke-width="7" fill="none"/><path d="M28,67 Q50,57 72,65" stroke="#8fc4ef" stroke-width="3" fill="none"/>');
+const milleHead = extra => `<g transform="translate(50 162) scale(1.55)">${MARK.mille().replace('<g class="mbow"></g>', extra.bow || '').replace('<g class="mneck"></g>', extra.neck || '')}</g>`;
+ICON.bow = k => circ('#2a2a5a', milleHead({ bow: bowSVG(BOWS[k]) }));
+ICON.neck = k => circ('#3a2a4a', `<g transform="translate(50 132) scale(1.9)">${MARK.mille().replace('<g class="mneck"></g>', NECKS[k])}</g>`);
+ICON.mitt = k => circ('#2b3a6b', `<path d="M34,82 L34,46 Q34,26 50,26 Q66,26 66,46 L66,82Z" fill="${MITTS[k]}"/><path d="M34,56 Q20,52 22,40 Q26,32 34,40Z" fill="${MITTS[k]}"/><rect x="32" y="76" width="36" height="10" rx="3" fill="#f5efe2"/>` +
+  ({ rod: [[44, 40], [56, 50], [46, 62], [58, 66]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="3.5" fill="#fff"/>`).join(''), gron: [[50, 44], [50, 64]].map(([x, y]) => `<path d="M${x},${y - 9} l7,12 h-14Z" fill="#cfe9c8"/>`).join(''), gul: [[44, 42], [57, 52], [46, 64]].map(([x, y]) => `<path d="${starD(x, y, 5)}" fill="#fff6c8"/>`).join('') })[k]);
+const skyL = (R, n = 170) => `<rect x="-900" y="-900" width="4400" height="2900" fill="url(#sky)"/>` + starsSVG(R, n, -900, 3400, -800, 620);
+
+/* =========================================================
+   Scener til dag 3-6
+   ========================================================= */
+SCENES.shore = () => {
+  const R = rng(88);
+  L(0, skyL(R) + `<path id="shAur" d="M-400,260 C100,140 500,330 900,180 S1500,120 1800,250" stroke="url(#aur)" stroke-width="140" fill="none" opacity="0"/>`);
+  L(.12, mountains(R, -900, 2100, 470, 140, 170, '#2f3674', '#9aa3d6'));
+  const h = hills(R, -900, 2100, 880, 30, '#5e6aa8'); let t = '';
+  for (let x = -880; x < 2100; x += 60 + R() * 90) if (R() < .5) t += pine(x, h.at(x) + 8, 60 + R() * 70, '#1a1f4d', '#9aa5d8');
+  L(.4, h.svg + t);
+  L(1, `<path d="M-900,1060 Q300,1030 700,1066 T2100,1060 L2100,1800 L-900,1800Z" fill="url(#snowG)"/><ellipse cx="300" cy="1130" rx="120" ry="20" fill="#dfe6f8" opacity=".6"/>`);
+  const cl = L(1, '');
+  addChar(cl, 'ugo', 340, 1100, .9);
+  addChar(cl, 'mille', 495, 1112, 1);
+  addChar(cl, 'pip', 420, 1106, .95);
+  const m = addChar(cl, 'isbjorn', 1600, 1120, 2.2, 'mor'); m.flip = true; m.set();
+  addChar(cl, 'isbjorn', 720, 1185, .95, 'nanok');
+  L(1, `<path d="M570,1140 Q600,1066 700,1060 Q800,1050 860,1100 Q884,1132 862,1142Z" fill="#e6ecfa"/>`);
+  let fg = ''; for (const [x, hh] of [[30, 760], [150, 520], [1170, 820], [1050, 560]]) fg += pine(x, 1320, hh, '#0b0f2c', '#7f8bc4');
+  L(1.2, fg);
+  return .6;
+};
+
+SCENES.plain = (o = {}) => {
+  const R = rng(99);
+  const a = o.night ? .5 : .2;
+  const au = i => `M${-900 + i * 200},${320 - i * 70} C${100 + i * 100},${160 - i * 40} ${600 + i * 80},${400 - i * 60} ${1200 + i * 60},${230 - i * 30} S${2300},${170} ${3400},${310 - i * 40}`;
+  L(0, skyL(R, 200) + [0, 1, 2].map(i => `<path class="aurora" style="animation-delay:${-i * 3}s" d="${au(i)}" stroke="url(#aur)" stroke-width="${150 - i * 35}" fill="none" opacity="${a}"/>`).join('') +
+    [0, 1, 2].map(i => `<path id="auB${i}" d="${au(i)}" stroke="url(#aur)" stroke-width="${170 - i * 35}" fill="none" opacity="0"/>`).join(''));
+  L(.08, mountains(R, -900, 3400, 500, 170, 210, '#323a7a', '#a3acdc'));
+  const h = hills(R, -900, 3400, 820, 14, '#6d79b6'); let t = '';
+  for (let x = -880; x < 3400; x += 40 + R() * 80) if (R() < .45) t += pine(x, h.at(x) + 6, 30 + R() * 30, '#2a3166', '#b6c0e6');
+  L(.3, h.svg + t + `<g transform="translate(640 826)"><rect x="-22" y="-24" width="44" height="26" fill="#3a2a2a"/><path d="M-28,-24 L0,-44 L28,-24Z" fill="#dfe6f8"/><circle cx="-8" cy="-12" r="16" fill="url(#warm)" opacity=".8"/><rect x="-12" y="-16" width="8" height="8" fill="#ffd27a"/><rect x="10" y="-52" width="6" height="14" fill="#3a2a2a"/></g>`);
+  L(1, `<path d="M-900,1000 Q600,975 1500,1000 T3400,995 L3400,1800 L-900,1800Z" fill="url(#snowG)"/>`);
+  const cl = L(1, '');
+  if (!o.noAnimals) {
+    const k = addChar(cl, 'kane', 1650, 1086, 1, 'kane'); k.flip = true; k.set();
+    const r = addChar(cl, 'rensdyr', 1500, 1086, 1); r.flip = true; r.set();
+    const m = addChar(cl, 'isbjorn', 760, 1090, 2, 'mor'); m.flip = true; m.set();
+    addChar(cl, 'isbjorn', 660, 1084, .9, 'nanok');
+  }
+  addChar(cl, 'ugo', 330, 1078, .9);
+  addChar(cl, 'mille', 485, 1090, 1);
+  addChar(cl, 'pip', 410, 1084, .95);
+  let fg = ''; for (const [x, rx] of [[100, 260], [900, 300], [1900, 280], [2700, 320]]) fg += `<ellipse cx="${x}" cy="1290" rx="${rx}" ry="60" fill="#e6ecfa"/>`;
+  L(1.25, fg);
+  return o.night ? .25 : .5;
+};
+
+SCENES.cabin = (o = {}) => {
+  const R = rng(111);
+  L(0, skyL(R) + `<path class="aurora" d="M-400,200 C100,90 500,280 900,140 S1500,90 1800,200" stroke="url(#aur)" stroke-width="110" fill="none"/>`);
+  L(.15, `<path d="M-200,1000 L520,180 L600,140 L690,190 L1500,1000Z" fill="#3a4180"/><path d="M520,180 L600,140 L690,190 L660,214 L620,196 L590,224 L556,204Z" fill="#c3cbee"/>
+<circle id="frostLight" cx="640" cy="260" r="0" fill="url(#sglow)"/>`);
+  const h = hills(R, -900, 2100, 900, 20, '#56619f'); let t = '';
+  for (let x = -880; x < 2100; x += 40 + R() * 50) if (R() < .6 && (x < 450 || x > 950)) t += pine(x, h.at(x) + 10, 110 + R() * 90, '#171d4c', '#8792cc');
+  L(.45, h.svg + t);
+  let logs = ''; for (let y = 832; y < 1050; y += 24) logs += `<line x1="560" y1="${y}" x2="840" y2="${y}" stroke="#3e2618" stroke-width="3"/>`;
+  L(1, `<path d="M-900,1040 Q600,1010 2100,1040 L2100,1800 L-900,1800Z" fill="url(#snowG)"/>
+<rect x="760" y="700" width="34" height="90" fill="#3e2618"/><rect x="754" y="692" width="46" height="13" rx="5" fill="#e3e9f8"/>
+<circle class="smoke" cx="777" cy="676" r="15" fill="#c8cfe8" opacity=".4"/><circle class="smoke" style="animation-delay:-2s" cx="777" cy="676" r="15" fill="#c8cfe8" opacity=".4"/><circle class="smoke" style="animation-delay:-4s" cx="777" cy="676" r="15" fill="#c8cfe8" opacity=".4"/>
+<rect x="560" y="820" width="280" height="232" fill="#5a3a2a"/>${logs}
+<path d="M530,826 L700,700 L870,826Z" fill="#3e2618"/><path d="M530,828 L700,700 L870,828" stroke="#e3e9f8" stroke-width="18" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="615" cy="905" r="70" fill="url(#warm)" opacity=".7"/><circle cx="785" cy="905" r="70" fill="url(#warm)" opacity=".7"/>
+<rect x="592" y="880" width="46" height="50" fill="#ffd27a"/><rect x="762" y="880" width="46" height="50" fill="#ffd27a"/>
+<path d="M615,880 v50 M592,905 h46 M785,880 v50 M762,905 h46" stroke="#5a3a2a" stroke-width="4"/>
+<path d="M672,1052 L672,964 Q700,936 728,964 L728,1052Z" fill="#2a1a14"/><path d="M676,1052 L676,966 Q700,942 724,966 L724,1052Z" fill="#8a4a2a" id="cabinDoor"/>
+<circle cx="700" cy="984" r="12" fill="none" stroke="#2f6b4f" stroke-width="6"/><circle cx="700" cy="995" r="4" fill="#d23f37"/>`);
+  const cl = L(1, '');
+  const mo = addChar(cl, 'mormor', 700, 1052, 1); if (!o.mormorOut) mo.el.setAttribute('opacity', '0');
+  if (o.guide) { const g = addChar(cl, o.guide, 560, 1066, o.guide === 'kat' ? 1 : .9, 'guide'); }
+  addChar(cl, 'ugo', 330, 1064, .9);
+  addChar(cl, 'mille', 480, 1072, 1);
+  addChar(cl, 'pip', 410, 1068, .95);
+  let fg = ''; for (const [x, hh] of [[20, 760], [140, 520], [1180, 800], [1060, 520]]) fg += pine(x, 1320, hh, '#0b0f2c', '#7f8bc4');
+  L(1.2, fg);
+  return .6;
+};
+
+SCENES.cabinIn = () => {
+  const R = rng(122);
+  let planks = ''; for (let x = -700; x < 1900; x += 58) planks += `<line x1="${x}" y1="-700" x2="${x}" y2="1000" stroke="#000" stroke-opacity=".15" stroke-width="3"/>`;
+  let tiles = ''; for (let y = 600; y < 880; y += 40) for (let x = 500; x < 700; x += 40) tiles += `<rect x="${x + 2}" y="${y + 2}" width="36" height="36" rx="3" fill="#efe6d4"/><circle cx="${x + 20}" cy="${y + 20}" r="7" fill="none" stroke="#6f8fc8" stroke-width="2"/>`;
+  L(.9, `<rect x="-700" y="-700" width="2600" height="1700" fill="url(#wall)"/>${planks}
+<circle cx="600" cy="720" r="460" fill="url(#warm)" opacity=".5" class="glowp"/>
+<g><rect x="860" y="360" width="200" height="220" rx="8" fill="#141a3a"/>${starsSVG(R, 14, 870, 1050, 370, 560)}
+<path d="M860,580 L900,520 L940,540 L980,470 L1020,500 L1060,460 L1060,580Z" fill="#3a4180"/><path d="M970,480 L980,470 L992,482Z" fill="#c3cbee"/>
+<g id="frostWin" opacity="0"><circle cx="985" cy="500" r="24" fill="url(#sglow)"/><circle cx="985" cy="508" r="7" fill="#eef2fb"/><circle cx="985" cy="498" r="5" fill="#eef2fb"/></g>
+<rect x="860" y="360" width="200" height="220" rx="8" fill="none" stroke="#6b4630" stroke-width="14"/><path d="M960,360 v220 M860,470 h200" stroke="#6b4630" stroke-width="8"/>
+<rect x="852" y="576" width="216" height="14" rx="4" fill="#7a5238"/></g>
+<rect x="180" y="560" width="90" height="344" fill="#24140f"/><rect x="186" y="566" width="78" height="338" fill="#3a2418"/>
+<path d="M210,250 Q600,330 1000,250" stroke="#c9b48a" stroke-width="2" fill="none"/>
+${[[300, 272, '#d23f37'], [420, 294, '#f2c35b'], [540, 306, '#2f8a5a'], [660, 306, '#d23f37'], [780, 294, '#f2c35b'], [900, 272, '#2f8a5a']].map(([x, y, c]) => `<circle cx="${x}" cy="${y + 12}" r="9" fill="${c}"/>`).join('')}`);
+  L(1, `<rect x="-700" y="904" width="2600" height="900" fill="#3b2626"/>
+<ellipse cx="400" cy="914" rx="120" ry="16" fill="#7a3346"/>
+<rect x="490" y="590" width="220" height="314" rx="10" fill="#d8ccb6"/>${tiles}
+<rect x="560" y="820" width="80" height="60" rx="6" fill="#2a1a14"/><ellipse cx="600" cy="860" rx="30" ry="14" fill="#ff9a3c" class="glowp"/><path class="flicker" d="M600,830 Q616,852 600,870 Q584,852 600,830Z" fill="#ffd36b"/>
+<rect x="480" y="572" width="240" height="24" rx="6" fill="#5a4a3a"/>
+<ellipse cx="600" cy="560" rx="100" ry="20" fill="#2a2a2e"/><rect x="694" y="552" width="80" height="10" rx="5" fill="#3a2a1a"/>
+<ellipse cx="548" cy="556" rx="22" ry="10" fill="#e8c590" class="dough"/><ellipse cx="600" cy="556" rx="22" ry="10" fill="#e8c590" class="dough"/><ellipse cx="652" cy="556" rx="22" ry="10" fill="#e8c590" class="dough"/>
+<rect x="740" y="800" width="270" height="20" rx="6" fill="#7a5238"/><rect x="756" y="820" width="16" height="84" fill="#5a3a26"/><rect x="978" y="820" width="16" height="84" fill="#5a3a26"/>
+<ellipse cx="825" cy="796" rx="24" ry="6" fill="#f5efe2"/><ellipse cx="895" cy="796" rx="24" ry="6" fill="#f5efe2"/><ellipse cx="965" cy="796" rx="22" ry="6" fill="#f5efe2"/>
+<circle cx="822" cy="790" r="6" fill="#c98a3a"/><circle cx="832" cy="791" r="6" fill="#c98a3a"/><circle cx="895" cy="790" r="6" fill="#c98a3a"/>`);
+  const cl = L(1, '');
+  addChar(cl, 'ged', 190, 904, .95, 'ged');
+  addChar(cl, 'kat', 340, 910, 1.1, 'kat');
+  addChar(cl, 'mormor', 450, 904, 1.1);
+  addChar(cl, 'ugo', 935, 800, .75);
+  addChar(cl, 'mille', 862, 800, .8);
+  addChar(cl, 'pip', 790, 800, .78);
+  return 0;
+};
+
+SCENES.storm = (o = {}) => {
+  const R = rng(133);
+  L(0, `<rect x="-900" y="-900" width="3000" height="2900" fill="#26305a"/>` + starsSVG(R, 60, -700, 1900, -800, 500));
+  L(.15, mountains(R, -900, 2100, 420, 160, 160, '#3a4180', '#c3cbee'));
+  L(.5, `<path d="M-900,1800 L-900,700 L200,560 L700,760 L1200,520 L2100,700 L2100,1800Z" fill="#4a5490"/><path d="M200,560 L260,600 L320,580 L700,760 L640,700 L560,690Z" fill="#c3cbee" opacity=".8"/>`);
+  L(1, `<path d="M-900,1800 L-900,1000 Q100,960 600,1040 Q1000,1100 2100,960 L2100,1800Z" fill="#9aa6d6"/>
+<path d="M-200,1100 Q300,1020 640,1060 Q900,1090 1300,980" stroke="#dfe6f8" stroke-width="40" fill="none" stroke-linecap="round" opacity=".7"/>
+${[[160, 1040, 60], [980, 1010, 80], [1180, 980, 50]].map(([x, y, r]) => `<ellipse cx="${x}" cy="${y}" rx="${r}" ry="${r * .55}" fill="#5f6a9e"/><ellipse cx="${x - 6}" cy="${y - r * .35}" rx="${r * .8}" ry="${r * .25}" fill="#e6ecfa"/>`).join('')}`);
+  const cl = L(1, '');
+  if (o.guide) addChar(cl, o.guide, 640, 1062, o.guide === 'kat' ? 1 : .9, 'guide');
+  addChar(cl, 'ugo', 360, 1056, .9);
+  addChar(cl, 'mille', 530, 1066, 1);
+  addChar(cl, 'pip', 450, 1062, .95);
+  const cloud = (i, x, y) => `<g id="cl${i}"><ellipse cx="${x}" cy="${y}" rx="150" ry="70" fill="#7d86ad"/><ellipse cx="${x - 80}" cy="${y + 20}" rx="90" ry="50" fill="#8a93b8"/><ellipse cx="${x + 90}" cy="${y + 16}" rx="100" ry="52" fill="#727ba3"/><ellipse cx="${x}" cy="${y - 40}" rx="90" ry="55" fill="#959ec2"/>
+<path d="M${x - 140},${y + 70} l-40,90 M${x - 40},${y + 80} l-40,90 M${x + 60},${y + 76} l-40,90 M${x + 150},${y + 66} l-40,90" stroke="#dfe6f8" stroke-width="4" stroke-linecap="round" opacity=".5"/></g>`;
+  L(1, cloud(0, 400, 420) + cloud(1, 640, 340) + cloud(2, 860, 440));
+  return 1;
+};
+
+SCENES.chasm = (o = {}) => {
+  const R = rng(144);
+  L(0, skyL(R) + moonSVG(860, 220, 44));
+  L(.15, mountains(R, -900, 2100, 480, 140, 170, '#323a7a', '#a3acdc'));
+  L(1, `<linearGradient id="gap" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a1f48"/><stop offset="1" stop-color="#05071a"/></linearGradient>
+<rect x="400" y="980" width="440" height="900" fill="url(#gap)"/>
+<path d="M-900,1800 L-900,1004 L420,1000 L470,1040 L440,1120 L470,1300 L430,1800Z" fill="#5a649e"/><path d="M-900,1004 L420,1000 L470,1040 L-900,1046Z" fill="#dfe6f8"/>
+<path d="M2100,1800 L2100,984 L800,980 L760,1030 L790,1140 L760,1320 L800,1800Z" fill="#5a649e"/><path d="M2100,984 L800,980 L760,1030 L2100,1026Z" fill="#dfe6f8"/>
+<path d="M460,1004 Q620,950 780,990" stroke="#bfe0ff" stroke-width="16" fill="none" stroke-linecap="round" opacity=".85"/>
+<path d="M462,1012 Q620,962 778,998" stroke="#8fc4ef" stroke-width="5" fill="none" opacity=".9"/>
+${[500, 560, 620, 680, 740].map((x, i) => `<path d="M${x},${f1(990 - Math.sin((x - 460) / 320 * Math.PI) * 40)} l5,${18 + i % 2 * 10} l5,-${18 + i % 2 * 10}Z" fill="#cfe7ff" opacity=".9"/>`).join('')}`);
+  const cl = L(1, '');
+  if (o.guide) addChar(cl, o.guide, 425, 1004, o.guide === 'kat' ? 1 : .9, 'guide');
+  addChar(cl, 'ugo', 230, 1004, .9);
+  addChar(cl, 'mille', 365, 1006, 1);
+  addChar(cl, 'pip', 300, 1004, .95);
+  return .3;
+};
+
+SCENES.cave = (o = {}) => {
+  const R = rng(155);
+  L(0, skyL(R));
+  L(.15, mountains(R, -900, 2100, 400, 140, 170, '#323a7a', '#a3acdc'));
+  let ice = ''; for (let x = 470; x < 830; x += 26) { const h = 20 + R() * 40; ice += `<path d="M${x},${f1(700 + Math.pow((x - 650) / 180, 2) * 120)} l9,${f1(h)} l9,-${f1(h)}Z" fill="#dff1ff" opacity=".9"/>`; }
+  L(1, `<radialGradient id="caveG"><stop offset="0" stop-color="#e6f6ff"/><stop offset=".45" stop-color="#7cc4f2"/><stop offset="1" stop-color="#2a4a8a" stop-opacity="0"/></radialGradient>
+<path d="M-900,1800 L-900,500 Q200,380 640,420 Q1100,380 2100,520 L2100,1800Z" fill="#6c78b6"/>
+<path d="M-900,520 Q200,400 640,440 Q1100,400 2100,540" stroke="#dfe6f8" stroke-width="26" fill="none"/>
+<circle cx="650" cy="880" r="330" fill="url(#caveG)" opacity=".75" class="glowp"/>
+<path d="M440,1060 Q440,720 650,690 Q860,720 860,1060Z" fill="#9fd4f5"/>
+<path d="M480,1060 Q480,760 650,736 Q820,760 820,1060Z" fill="#3a6fb0"/>
+<path d="M520,1060 Q520,800 650,780 Q780,800 780,1060Z" fill="#1d3a72"/>${ice}
+<path d="M-900,1060 Q600,1030 2100,1060 L2100,1800 L-900,1800Z" fill="url(#snowG)"/>`);
+  const cl = L(1, '');
+  if (o.guide) addChar(cl, o.guide, 420, 1084, o.guide === 'kat' ? 1 : .9, 'guide');
+  addChar(cl, 'ugo', 160, 1080, .9);
+  addChar(cl, 'mille', 320, 1088, 1);
+  addChar(cl, 'pip', 240, 1084, .95);
+  return .4;
+};
+
+/* =========================================================
+   DAG 3 – Den lille isbjørn
+   ========================================================= */
+regLines(3, [
+  ['I går'],
+  ['r1', 'n', 'I går fandt Pip, Mille og Ugo et spor af stjernestøv, der førte hen over den store, frosne sø.'],
+  ['Isen'],
+  ['i1', 'n', 'Ved siden af sporet var der store, runde fodspor. Nogen havde gået over isen før dem.'],
+  ['i2', 'pip', 'Kom, vi går over. Men pas på, isen er glat!'],
+  ['i3', 'n', 'Isen var så glat, at Mille næsten gled på halen. Hov!'],
+  ['i4', 'mille', 'Vi må træde der, hvor stjernestøvet ligger. Så glider vi ikke.'],
+  ['i5', 'n', 'Kan du hjælpe dem? Tryk på stjernestøvet på isen, så de kan gå sikkert over!'],
+  ['i6', 'ugo', 'Hu-hu! Godt gået. Nu er vi ovre.'],
+  ['Bredden'],
+  ['b1', 'n', 'På den anden side af søen førte de runde fodspor hen til en stor snedrive. Og bag snedriven hørte de en lyd.'],
+  ['b2', 'n', 'Snøft … snøft …'],
+  ['b3', 'pip', 'Hallo? Er der nogen?'],
+  ['b4', 'n', 'Bag snedriven sad en lille, hvid isbjørn med en sort snude. Han græd store, kolde tårer.'],
+  ['b5', 'nanok', 'Jeg hedder Nanok. Jeg er blevet væk fra min mor.'],
+  ['b6', 'nanok', 'Jeg så en stor, lysende stjerne flyve over himlen, og så løb jeg efter den. Og nu kan jeg ikke finde hjem.'],
+  ['b7', 'mille', 'Åh, stakkels lille Nanok. Vi hjælper dig!'],
+  ['b8', 'n', 'Theo, hvordan skal de finde Nanoks mor?'],
+  ['b9', 'n', 'Skal Ugo flyve højt op og kigge efter hende?'],
+  ['b10', 'n', 'Eller skal Nanok brøle så højt, han kan?'],
+  ['Hvis Theo vælger Ugo'],
+  ['u1', 'n', 'Ugo bredte sine store vinger ud og fløj højt op over sneen. Han kiggede og kiggede.'],
+  ['u2', 'ugo', 'Hu-hu! Jeg kan se hende! En stor, hvid isbjørn, lige bag bakken!'],
+  ['Hvis Theo vælger brølet'],
+  ['o1', 'n', 'Nanok tog en dyb indånding og brølede, så højt han kunne.'],
+  ['o2', 'nanok', 'Mooor!'],
+  ['o3', 'n', 'Og langt væk svarede et stort, dybt brøl.'],
+  ['Isbjørnemor'],
+  ['m1', 'n', 'Og så kom Nanoks mor løbende gennem sneen. Hun var stor og hvid og blød som en dyne.'],
+  ['m2', 'bjoernemor', 'Nanok! Der er du jo, min lille skat!'],
+  ['m3', 'n', 'Nanok løb lige ind til sin mor, og hun gav ham det største bjørnekram i hele verden.'],
+  ['m4', 'bjoernemor', 'Tusind tak, fordi I passede på ham. Hvad laver sådan nogle små venner herude i kulden?'],
+  ['m5', 'pip', 'Vi leder efter julestjernen. Har du set den?'],
+  ['m6', 'bjoernemor', 'Jeg så den flyve mod de høje bjerge. Og jeg så en stor, rund skikkelse, der bar på noget, der lyste.'],
+  ['m7', 'ugo', 'Hu-hu. En stor, rund skikkelse … ligesom de runde fodspor!'],
+  ['Huen'],
+  ['g1', 'n', 'Mille ville gerne give Nanok en gave, så han aldrig skulle fryse om ørerne igen. Hun ville sy en hue til ham.'],
+  ['g2', 'n', 'Freja, hvilken hue skal Nanok have?'],
+  ['g3', 'n', 'Den røde hue med en stor kvast?'],
+  ['g4', 'n', 'Den stribede hue?'],
+  ['g5', 'n', 'Eller huen med små bjørneører?'],
+  ['h_kvast', 'n', 'Mille syede en rød hue med en stor, blød kvast. Nanok rystede på hovedet, så kvasten dansede.'],
+  ['h_stribet', 'n', 'Mille syede en stribet hue i alle regnbuens farver. Nanok syntes, det var den flotteste hue i hele verden.'],
+  ['h_oerer', 'n', 'Mille syede en hue med to små bjørneører på toppen. Nu havde Nanok fire ører!'],
+  ['g6', 'nanok', 'Tak, Mille! Den er så varm og fin!'],
+  ['g7', 'bjoernemor', 'I morgen hjælper vi jer på vej mod bjergene. Men nu skal alle sove.'],
+  ['g8', 'n', 'Den nat sov de alle sammen tæt op ad den store, varme isbjørn. Og over dem begyndte himlen at lyse grønt og blåt …'],
+  ['g9', 'n', 'Hvad mon det var? Det finder vi ud af i morgen …']
+]);
+const say3 = k => sayId('d3.' + k);
+DAYS_EXTRA[3] = makeDay(3, '3. december', 'Den lille isbjørn', [
+  async P => {
+    await scene('lake', { cam: [560, 1000, 1000], look: true });
+    camTo(600, 960, 1000, 8000, E.s);
+    await say3('r1'); await say3('i1'); await say3('i2');
+    const walkTo = (x, y, s, d) => Promise.all([C.pip.to(x, y, d, { s, hop: 6, steps: 6, ease: E.lin }), C.mille.to(x + 60 * s, y + 6, d, { s: s * 1.05, hop: 5, steps: 7, ease: E.lin }), C.ugo.to(x - 70 * s, y - 4, d, { s, hop: 5, steps: 5, ease: E.lin })]);
+    await walkTo(560, 1060, .85, 2500);
+    A.whoosh(.4, .1); await tween(800, t => { C.mille.r = Math.sin(t * Math.PI * 3) * 16; C.mille.set(); }, E.lin); C.mille.r = 0; C.mille.set();
+    await say3('i3'); await say3('i4'); await say3('i5');
+    const spots = [[650, 1010], [740, 940], [830, 880]];
+    camTo(680, 950, 900, 2000);
+    await findRace(C.pip.el.parentNode, spots, i => { const s = spots[i]; walkTo(s[0] - 40, s[1] + 26, .8 - i * .13, 1000).catch(() => {}); });
+    await say3('i6');
+    await walkTo(900, 790, .38, 2600);
+  },
+  async P => {
+    await scene('shore', { cam: [580, 1000, 1000], look: true });
+    const nk = C.nanok;
+    await say3('b1'); await say3('b2'); await say3('b3');
+    A.pop(); await nk.to(720, 1126, 700, { ease: E.o });
+    await say3('b4');
+    await nk.to(640, 1112, 1200, { hop: 8, steps: 4, ease: E.lin });
+    await say3('b5'); await say3('b6'); await say3('b7'); await say3('b8');
+    const c = await choice('theo', [
+      { id: 'ugo', label: 'Ugo kigger', say: 'd3.b9', icon: ICON.ugo },
+      { id: 'brol', label: 'Nanok brøler', say: 'd3.b10', icon: ICON.isbjorn }
+    ]);
+    pick(3, P, 'theo', c);
+  },
+  async P => {
+    if (!C.mor) { await scene('shore', { cam: [580, 1000, 1000], look: true }); C.nanok.x = 640; C.nanok.y = 1112; C.nanok.set(); }
+    const nk = C.nanok, mor = C.mor, ugo = C.ugo;
+    if (P.theo === 'ugo') {
+      await say3('u1');
+      ugo.el.classList.add('flap'); camTo(600, 820, 1150, 2000);
+      await ugo.to(560, 600, 1600, { ease: E.o }); await ugo.to(760, 560, 1300);
+      await say3('u2');
+      await ugo.to(340, 1100, 1700, { ease: E.io }); ugo.el.classList.remove('flap');
+    } else {
+      await say3('o1');
+      await tween(900, t => { nk.s = .95 * (1 + Math.sin(t * Math.PI) * .18); nk.set(); }, E.io); nk.s = .95; nk.set();
+      await say3('o2'); await wait(700); A.whoosh(1.4, .2); await say3('o3');
+    }
+    camTo(650, 1000, 1300, 2600);
+    await mor.to(880, 1120, 2800, { hop: 10, steps: 6, ease: E.o });
+    await say3('m1'); await say3('m2');
+    await nk.to(770, 1116, 800, { hop: 22, ease: E.o });
+    const [hx, hy] = nk.center(); spawnSparks(hx, hy - 20, 30, { c: 'p', spread: 200, up: 140 }); A.chime();
+    await say3('m3'); await say3('m4'); await say3('m5'); await say3('m6'); await say3('m7');
+  },
+  async P => {
+    if (!C.mor || C.mor.x > 1000) { if (!C.mor) await scene('shore', { cam: [650, 1000, 1300], look: true }); C.nanok.x = 770; C.nanok.y = 1116; C.nanok.set(); C.mor.x = 880; C.mor.set(); }
+    const nk = C.nanok;
+    await say3('g1'); await say3('g2');
+    const c = await choice('freja', [
+      { id: 'kvast', label: 'Rød kvast', say: 'd3.g3', icon: ICON.hat('kvast') },
+      { id: 'stribet', label: 'Stribet', say: 'd3.g4', icon: ICON.hat('stribet') },
+      { id: 'oerer', label: 'Bjørneører', say: 'd3.g5', icon: ICON.hat('oerer') }
+    ]);
+    pick(3, P, 'freja', c);
+    await spinChange(nk, () => setHat(nk.el, c), 'p');
+    await say3('h_' + c); await say3('g6'); await say3('g7');
+    const au = $('#shAur'); tween(5000, t => au.setAttribute('opacity', (t * .35).toFixed(2)), E.lin).catch(() => {});
+    camTo(620, 760, 1300, 9000, E.s);
+    await say3('g8'); await say3('g9');
+  }
+]);
+
+/* =========================================================
+   DAG 4 – Nordlyset
+   ========================================================= */
+regLines(4, [
+  ['I går'],
+  ['r1', 'n', 'I går hjalp Pip, Mille og Ugo den lille isbjørn Nanok med at finde sin mor. Og hun fortalte, at julestjernen var fløjet mod de høje bjerge.'],
+  ['Sletten'],
+  ['p1', 'n', 'Foran dem lå en kæmpestor, hvid slette. Bjergene var langt, langt væk.'],
+  ['p2', 'mille', 'Puha. Det tager jo hundrede år at gå så langt på mine små musefødder.'],
+  ['p3', 'n', 'Lige da kom en flok rensdyr travende med en lille, rød kane bag sig. Klokkerne ringede.'],
+  ['p4', 'rensdyr', 'Goddag, små venner! Skal I mod bjergene? Vi kan trække jer i kanen!'],
+  ['p5', 'bjoernemor', 'Eller I kan ride på min ryg. Jeg er stærk og varm.'],
+  ['p6', 'n', 'Theo, hvordan skal de komme over sletten?'],
+  ['p7', 'n', 'På isbjørnens ryg?'],
+  ['p8', 'n', 'Eller i rensdyrenes kane?'],
+  ['Hvis Theo vælger isbjørnen'],
+  ['be1', 'n', 'Alle tre kravlede op på isbjørnemors store, bløde ryg, og Nanok løb ved siden af.'],
+  ['be2', 'nanok', 'Hurra! Hurtigere, mor!'],
+  ['be3', 'n', 'Hun løb hen over sneen, så det sprøjtede om ørerne på dem.'],
+  ['fv_bjoern', 'n', 'Da de nåede frem, sagde isbjørnemor og Nanok farvel og løb hjem. Nanok vinkede med sin nye hue.'],
+  ['Hvis Theo vælger rensdyrene'],
+  ['re1', 'n', 'Alle tre hoppede op i den lille kane. Klokkerne ringede, og rensdyrene satte i løb.'],
+  ['re2', 'rensdyr', 'Hold godt fast! Nu går det stærkt!'],
+  ['re3', 'n', 'Kanen fløj hen over sneen, og Nanok og hans mor vinkede farvel.'],
+  ['fv_ren', 'n', 'Da de nåede frem, sagde rensdyrene farvel og travede hjem med den tomme kane. Klingeling, klingeling.'],
+  ['Begge veje'],
+  ['v1', 'n', 'De rejste hele dagen. Og da det blev mørkt, var bjergene kommet meget tættere på.'],
+  ['Nordlyset'],
+  ['n1', 'n', 'Pludselig begyndte himlen at danse. Grønne og lilla bånd af lys bølgede hen over stjernerne.'],
+  ['n2', 'pip', 'Se! Det er nordlyset!'],
+  ['n3', 'ugo', 'Hu-hu. Man siger, at nordlyset synger, hvis man rører ved det.'],
+  ['n4', 'n', 'Kan du få nordlyset til at synge? Tryk på lyset oppe på himlen!'],
+  ['n5', 'mille', 'Hvor er det smukt! Jeg vil sy noget i nordlysets farver.'],
+  ['Sløjfen'],
+  ['s1', 'n', 'Mille fandt et stykke silkebånd i sin sytaske. Hun ville lave en sløjfe til sit øre. Freja, hvilken farve skal sløjfen have?'],
+  ['s2', 'n', 'Nordlysgrøn?'],
+  ['s3', 'n', 'Lyserød?'],
+  ['s4', 'n', 'Eller himmelblå?'],
+  ['sl_groen', 'n', 'Mille bandt en grøn sløjfe, der skinnede ligesom nordlyset.'],
+  ['sl_rosa', 'n', 'Mille bandt en lyserød sløjfe, der var lige så blød som en sky.'],
+  ['sl_blaa', 'n', 'Mille bandt en himmelblå sløjfe, der glimtede som isen på søen.'],
+  ['s5', 'n', 'Lige da fik Pip øje på noget. For foden af bjerget lå et lille hus. Der var lys i vinduet, og der kom røg op af skorstenen.'],
+  ['s6', 'pip', 'Hvem mon bor derinde?'],
+  ['s7', 'n', 'Det finder vi ud af i morgen …']
+]);
+const say4 = k => sayId('d4.' + k);
+DAYS_EXTRA[4] = makeDay(4, '4. december', 'Nordlyset', [
+  async P => {
+    await scene('plain', { cam: [560, 980, 1000], look: true });
+    await say4('r1'); await say4('p1'); await say4('p2');
+    const r = C.rensdyr, k = C.kane;
+    camTo(700, 980, 1150, 3000);
+    A.bell(1568, .05); A.bell(1760, .05, .2); A.bell(1568, .05, .4);
+    await Promise.all([r.to(980, 1086, 3000, { hop: 8, steps: 8, ease: E.o }), k.to(1130, 1086, 3000, { ease: E.o })]);
+    await say4('p3'); await say4('p4'); await say4('p5'); await say4('p6');
+    const c = await choice('theo', [
+      { id: 'bjorn', label: 'Isbjørnen', say: 'd4.p7', icon: ICON.bjornride },
+      { id: 'ren', label: 'Rensdyrene', say: 'd4.p8', icon: ICON.rensdyr }
+    ]);
+    pick(4, P, 'theo', c);
+  },
+  async P => {
+    if (!C.rensdyr) { await scene('plain', { cam: [700, 980, 1150], look: true }); C.rensdyr.x = 980; C.rensdyr.set(); C.kane.x = 1130; C.kane.set(); }
+    const { pip, mille, ugo, mor, nanok, rensdyr, kane } = C;
+    const riders = [[ugo, -70], [pip, -15], [mille, 40]];
+    let X;
+    if (P.theo === 'bjorn') {
+      await say4('be1');
+      mor.flip = false; mor.set();
+      await Promise.all(riders.map(([ch, o], i) => ch.to(760 + o, 966, 900 + i * 150, { s: .68, hop: 60, ease: E.lin })));
+      Promise.all([rensdyr.to(1700, 1086, 2500), kane.to(1850, 1086, 2500)]).catch(() => {});
+      await say4('be2');
+      camId++; X = 760;
+      await tween(6500, t => {
+        X = 760 + 1500 * t; mor.x = X; mor.y = 1090 - Math.abs(Math.sin(t * 40)) * 10; mor.set();
+        riders.forEach(([ch, o]) => { ch.x = X + o; ch.y = mor.y - 124; ch.set(); });
+        nanok.x = X + 190; nanok.y = 1084 - Math.abs(Math.sin(t * 46)) * 14; nanok.flip = false; nanok.set();
+        cam.x += (X + 60 - cam.x) * .1; cam.w += (1000 - cam.w) * .05; applyCam();
+      }, E.s);
+      await say4('be3'); await say4('v1');
+      await Promise.all(riders.map(([ch, o], i) => ch.to(X - 220 + i * 75, 1086, 800 + i * 120, { s: [.9, .95, 1][i], hop: 50, ease: E.lin })));
+      await say4('fv_bjoern');
+      mor.flip = true; nanok.flip = true; mor.set(); nanok.set();
+      await Promise.all([mor.to(X - 1400, 1090, 3500, { ease: E.i }), nanok.to(X - 1300, 1084, 3500, { hop: 12, steps: 10, ease: E.i })]);
+    } else {
+      await say4('re1');
+      rensdyr.flip = false; kane.flip = false; rensdyr.set(); kane.set();
+      kane.x = rensdyr.x - 170; kane.set();
+      await Promise.all(riders.map(([ch, o], i) => ch.to(kane.x + o * .9, 1052, 900 + i * 150, { s: .7, hop: 60, ease: E.lin })));
+      await say4('re2');
+      camId++; X = rensdyr.x;
+      A.bell(1568, .05); A.bell(1760, .05, .15);
+      await tween(6500, t => {
+        X = 980 + 1500 * t; rensdyr.x = X; rensdyr.y = 1086 - Math.abs(Math.sin(t * 36)) * 8; rensdyr.set();
+        kane.x = X - 170; kane.set();
+        riders.forEach(([ch, o]) => { ch.x = kane.x + o * .9; ch.y = 1052; ch.set(); });
+        cam.x += (X - 100 - cam.x) * .1; cam.w += (1000 - cam.w) * .05; applyCam();
+        if (Math.random() < .08) A.bell(1568 + Math.random() * 400, .02);
+      }, E.s);
+      await say4('re3'); await say4('v1');
+      await Promise.all(riders.map(([ch, o], i) => ch.to(X - 380 + i * 75, 1086, 800 + i * 120, { s: [.9, .95, 1][i], hop: 50, ease: E.lin })));
+      await say4('fv_ren');
+      await Promise.all([rensdyr.to(X + 1500, 1086, 3500, { hop: 8, steps: 12, ease: E.i }), kane.to(X + 1330, 1086, 3500, { ease: E.i })]);
+    }
+  },
+  async P => {
+    await scene('plain', { cam: [520, 860, 1000], night: true, noAnimals: true, look: true });
+    await say4('n1'); await say4('n2'); await say4('n3'); await say4('n4');
+    const notes = [1046.5, 1318.5, 1568];
+    await findRace(C.pip.el.parentNode, [[380, 350], [560, 260], [740, 370]], i => {
+      A.bell(notes[i], .1); A.bell(notes[i] * 1.5, .05, .25);
+      const b = document.getElementById('auB' + i); tween(1800, t => b.setAttribute('opacity', (Math.sin(t * Math.PI) * .7).toFixed(2)), E.lin).catch(() => {});
+    });
+    await say4('n5');
+  },
+  async P => {
+    if (!C.pip) await scene('plain', { cam: [520, 860, 1000], night: true, noAnimals: true, look: true });
+    const m = C.mille;
+    camTo(520, 960, 800, 2000);
+    await say4('s1');
+    const c = await choice('freja', [
+      { id: 'groen', label: 'Grøn', say: 'd4.s2', icon: ICON.bow('groen') },
+      { id: 'rosa', label: 'Lyserød', say: 'd4.s3', icon: ICON.bow('rosa') },
+      { id: 'blaa', label: 'Himmelblå', say: 'd4.s4', icon: ICON.bow('blaa') }
+    ]);
+    pick(4, P, 'freja', c);
+    await spinChange(m, () => setBow(m.el, c), c === 'rosa' ? 'p' : 'w');
+    await say4('sl_' + c);
+    const [fx, fy] = focusCam(640, 810, .3);
+    camTo(fx, fy, 420, 5000);
+    await say4('s5'); await say4('s6'); await say4('s7');
+  }
+]);
+
+/* =========================================================
+   DAG 5 – Mormor Kanel
+   ========================================================= */
+regLines(5, [
+  ['I går'],
+  ['r1', 'n', 'I går så Pip, Mille og Ugo nordlyset danse. Og for foden af bjerget fandt de et lille hus med lys i vinduet.'],
+  ['Huset'],
+  ['h1', 'n', 'Pip bankede forsigtigt på døren. Bank, bank, bank.'],
+  ['h2', 'n', 'Døren gik op, og der stod en gammel nissekone med runde briller og en rød hue.'],
+  ['h3', 'mormor', 'Nej, se dog! Små venner ude i kulden? Kom indenfor og få varmen. Jeg hedder Mormor Kanel.'],
+  ['Stuen'],
+  ['s1', 'n', 'Inde i huset var der lunt og hyggeligt. Det duftede af kanel og æbleskiver.'],
+  ['s2', 'n', 'Ved kakkelovnen lå en stribet kat og spandt. Og ved døren stod en lille ged og tyggede på et halmstrå.'],
+  ['s3', 'mormor', 'Det er min kat Mis og min ged Gerda. Nu skal vi have æbleskiver! Vil I hjælpe mig med at vende dem?'],
+  ['s4', 'n', 'Kan du hjælpe Mormor Kanel? Tryk på æbleskiverne i panden, så de bliver vendt!'],
+  ['s5', 'pip', 'Mmm! De er gyldne og runde og helt perfekte!'],
+  ['s6', 'n', 'Mens de spiste æbleskiver, fortalte Pip om julestjernen og den store, runde skikkelse.'],
+  ['s7', 'mormor', 'En stor, rund skikkelse? Det må være Frost. Han er en snemand, som bor helt alene oppe på bjerget.'],
+  ['s8', 'mille', 'En snemand! Så var det hans fodspor, vi så ved søen!'],
+  ['s9', 'mormor', 'Stien op ad bjerget er svær at finde. Men et af mine dyr kan vise jer vejen i morgen.'],
+  ['s10', 'n', 'Theo, hvem skal vise vejen op ad bjerget?'],
+  ['s11', 'n', 'Geden Gerda, der kender alle stierne?'],
+  ['s12', 'n', 'Eller katten Mis, der kan se i mørket?'],
+  ['gd', 'n', 'Geden Gerda brægede glad. Mæææh! Hun elskede at klatre.'],
+  ['ks', 'n', 'Katten Mis strakte sig og blinkede med sine store, gule øjne. Miaaav.'],
+  ['Halskæden'],
+  ['k1', 'mormor', 'Inden I skal sove, har jeg en lille gave til dig, Mille. Du må vælge en halskæde fra mit gamle smykkeskrin.'],
+  ['k2', 'n', 'Freja, hvilken halskæde skal Mille vælge?'],
+  ['k3', 'n', 'Perlekæden?'],
+  ['k4', 'n', 'Kæden med en lille guldstjerne?'],
+  ['k5', 'n', 'Eller kæden med et rødt hjerte?'],
+  ['hk_perle', 'n', 'Mille tog perlekæden på. Perlerne skinnede som små snebolde.'],
+  ['hk_stjerne', 'n', 'Mille tog kæden med den lille guldstjerne på. Den glimtede, som om den savnede julestjernen.'],
+  ['hk_hjerte', 'n', 'Mille tog kæden med det røde hjerte på. Hun var så glad, at hendes eget hjerte næsten hoppede.'],
+  ['k6', 'mille', 'Tusind tak, Mormor Kanel!'],
+  ['k7', 'n', 'Om natten kiggede Pip ud ad vinduet. Højt oppe på bjerget så han en stor, rund skygge gå op ad stien. Og den bar på noget, der lyste.'],
+  ['k8', 'pip', 'Det er Frost! Og han har stjernen!'],
+  ['k9', 'n', 'Hvordan mon de kommer op ad det høje bjerg? Det finder vi ud af i morgen …']
+]);
+const say5 = k => sayId('d5.' + k);
+DAYS_EXTRA[5] = makeDay(5, '5. december', 'Mormor Kanel', [
+  async P => {
+    await scene('cabin', { cam: [560, 960, 1000], look: true });
+    await say5('r1');
+    await Promise.all([C.pip.to(620, 1060, 1600, { hop: 6, steps: 5, ease: E.lin }), C.mille.to(560, 1070, 1600, { hop: 5, steps: 6, ease: E.lin }), C.ugo.to(470, 1062, 1600, { hop: 5, steps: 4, ease: E.lin })]);
+    camTo(640, 940, 800, 2000);
+    await say5('h1');
+    for (let i = 0; i < 3; i++) { A.pop(); await wait(320); }
+    const door = $('#cabinDoor'); tween(600, t => door.setAttribute('opacity', (1 - t * .9).toFixed(2)), E.lin).catch(() => {});
+    C.mormor.fade(1, 700);
+    await say5('h2'); await say5('h3');
+  },
+  async P => {
+    await scene('cabinIn', { cam: [680, 720, 1100], look: true });
+    await say5('s1');
+    camTo(330, 780, 900, 2600);
+    await say5('s2');
+    camTo(560, 720, 900, 2200);
+    await say5('s3');
+    camTo(600, 600, 560, 2200);
+    await say5('s4');
+    const dough = [...document.querySelectorAll('.dough')];
+    await findRace(C.pip.el.parentNode, [[548, 548], [600, 548], [652, 548]], i => { dough[i]?.setAttribute('fill', '#c98a3a'); A.pop(); });
+    camTo(860, 720, 800, 2200);
+    await say5('s5'); await say5('s6'); await say5('s7'); await say5('s8'); await say5('s9'); await say5('s10');
+    const c = await choice('theo', [
+      { id: 'ged', label: 'Geden Gerda', say: 'd5.s11', icon: ICON.ged },
+      { id: 'kat', label: 'Katten Mis', say: 'd5.s12', icon: ICON.kat }
+    ]);
+    pick(5, P, 'theo', c);
+    const g = c === 'ged' ? C.ged : C.kat;
+    camTo(c === 'ged' ? 300 : 400, 780, 800, 1600);
+    await g.to(g.x, g.y, 700, { hop: 40, steps: 2, ease: E.lin });
+    await say5(c === 'ged' ? 'gd' : 'ks');
+  },
+  async P => {
+    if (!C.mormor) await scene('cabinIn', { cam: [860, 720, 800], look: true });
+    camTo(880, 720, 760, 1600);
+    await say5('k1'); await say5('k2');
+    const c = await choice('freja', [
+      { id: 'perle', label: 'Perler', say: 'd5.k3', icon: ICON.neck('perle') },
+      { id: 'stjerne', label: 'Guldstjerne', say: 'd5.k4', icon: ICON.neck('stjerne') },
+      { id: 'hjerte', label: 'Rødt hjerte', say: 'd5.k5', icon: ICON.neck('hjerte') }
+    ]);
+    pick(5, P, 'freja', c);
+    await spinChange(C.mille, () => setNeck(C.mille.el, c), c === 'hjerte' ? 'p' : 'g');
+    await say5('hk_' + c); await say5('k6');
+    camTo(960, 470, 300, 4000);
+    await say5('k7');
+    const fw = $('#frostWin'); fw.setAttribute('opacity', '1');
+    await tween(3500, t => fw.setAttribute('transform', `translate(${f1(-30 + t * 20)} ${f1(40 - t * 50)})`), E.io);
+    await say5('k8'); await say5('k9');
+  }
+]);
+
+/* =========================================================
+   DAG 6 – Stien op ad bjerget
+   ========================================================= */
+regLines(6, [
+  ['I går'],
+  ['r1', 'n', 'I går mødte Pip, Mille og Ugo den søde Mormor Kanel. Og om natten så Pip snemanden Frost gå op ad bjerget med noget, der lyste.'],
+  ['Afsted'],
+  ['a1', 'mormor', 'Pas godt på hinanden derude. Og tag den her madpakke med æbleskiver med.'],
+  ['ag_ged', 'n', 'Geden Gerda hoppede foran dem op ad stien. Hop, hop, hop!'],
+  ['ag_kat', 'n', 'Katten Mis listede foran dem med halen højt i vejret.'],
+  ['a2', 'n', 'Stien snoede sig op ad bjerget, og det blev koldere og koldere. Mille fik helt kolde poter.'],
+  ['a3', 'mille', 'Uh, mine poter er frosne. Jeg syr vanter til os alle sammen!'],
+  ['a4', 'n', 'Freja, hvilke vanter skal Mille sy?'],
+  ['a5', 'n', 'Røde vanter med hvide prikker?'],
+  ['a6', 'n', 'Grønne vanter med små juletræer?'],
+  ['a7', 'n', 'Eller gule vanter med stjerner?'],
+  ['va_rod', 'n', 'Mille syede røde vanter med hvide prikker. Små til sig selv, mellemstore til Pip og nogle helt særlige til Ugos vinger.'],
+  ['va_gron', 'n', 'Mille syede grønne vanter med små juletræer. Små til sig selv, mellemstore til Pip og nogle helt særlige til Ugos vinger.'],
+  ['va_gul', 'n', 'Mille syede gule vanter med stjerner. Små til sig selv, mellemstore til Pip og nogle helt særlige til Ugos vinger.'],
+  ['a8', 'ugo', 'Hu-hu! Vingevanter! Det har jeg aldrig prøvet før.'],
+  ['Stormen'],
+  ['st1', 'n', 'Højere oppe kom der en snestorm. Vinden hylede, og sneen fløj rundt om ørerne på dem.'],
+  ['st2', 'pip', 'Jeg kan ikke se noget!'],
+  ['sg_ged', 'ged', 'Mæææh! Hold fast i min hale, så går vi ikke vild!'],
+  ['sg_kat', 'kat', 'Miav! Jeg kan se stien, selv i stormen. Følg efter mig!'],
+  ['st3', 'n', 'Kan du hjælpe? Tryk på de store skyer, så blæser stormen væk!'],
+  ['st4', 'n', 'Og så holdt stormen op. Himlen blev klar igen, og stjernerne kom frem.'],
+  ['Kløften'],
+  ['kl1', 'n', 'Men nu stod de foran en dyb kløft. Over kløften lå en smal bro af is.'],
+  ['kl2', 'mille', 'Uh, den ser glat ud.'],
+  ['kl3', 'n', 'Theo, hvordan skal de komme over kløften?'],
+  ['kl4', 'n', 'Skal Ugo flyve dem over, én ad gangen?'],
+  ['kl5', 'n', 'Eller skal de gå forsigtigt over isbroen?'],
+  ['fl1', 'n', 'Ugo fløj frem og tilbage over kløften. Først med Mille, så med Pip, og til sidst med deres lille hjælper.'],
+  ['fl2', 'ugo', 'Hu-hu! Mine vinger er stærke. Især med vanter på!'],
+  ['gb1', 'n', 'De gik over isbroen, et lille skridt ad gangen, og holdt hinanden i hånden. Ingen kiggede ned.'],
+  ['gb2', 'pip', 'Vi klarede det! Sammen!'],
+  ['Hulen'],
+  ['h1', 'n', 'På den anden side af kløften lå indgangen til en stor hule af is. Den lyste blåt indefra.'],
+  ['h2', 'n', 'Og inde fra hulen kunne de høre en dyb, stille lyd. Ligesom en, der nynnede helt alene.'],
+  ['h3', 'mille', 'Tror I, det er Frost?'],
+  ['h4', 'pip', 'Der er kun én måde at finde ud af det på.'],
+  ['h5', 'n', 'Hvem mon nynner inde i ishulen? Det finder vi ud af i morgen …']
+]);
+const say6 = k => sayId('d6.' + k);
+const guideOf = () => progress[5]?.theo || 'ged';
+DAYS_EXTRA[6] = makeDay(6, '6. december', 'Stien op ad bjerget', [
+  async P => {
+    await scene('cabin', { cam: [560, 960, 1000], look: true, guide: guideOf(), mormorOut: true });
+    await say6('r1'); await say6('a1');
+    await say6(guideOf() === 'kat' ? 'ag_kat' : 'ag_ged');
+    await C.guide.to(C.guide.x - 40, C.guide.y, 700, { hop: 30, steps: 2, ease: E.lin });
+    await say6('a2'); await say6('a3'); await say6('a4');
+    const c = await choice('freja', [
+      { id: 'rod', label: 'Røde prikker', say: 'd6.a5', icon: ICON.mitt('rod') },
+      { id: 'gron', label: 'Grønne træer', say: 'd6.a6', icon: ICON.mitt('gron') },
+      { id: 'gul', label: 'Gule stjerner', say: 'd6.a7', icon: ICON.mitt('gul') }
+    ]);
+    pick(6, P, 'freja', c);
+    await spinChange(C.mille, () => ['pip', 'mille', 'ugo'].forEach(k => setMitt(C[k].el, c)), c === 'gul' ? 'g' : 'w');
+    await say6('va_' + c); await say6('a8');
+  },
+  async P => {
+    await scene('storm', { cam: [560, 900, 1000], look: true, guide: guideOf() });
+    await say6('st1'); await say6('st2');
+    await say6(guideOf() === 'kat' ? 'sg_kat' : 'sg_ged');
+    await say6('st3');
+    await findRace(C.pip.el.parentNode, [[400, 420], [640, 340], [860, 440]], i => {
+      const cl = document.getElementById('cl' + i); A.whoosh(.8, .18);
+      tween(900, t => { cl.setAttribute('opacity', (1 - t).toFixed(2)); cl.setAttribute('transform', `translate(${f1(t * 260)} ${f1(-t * 40)})`); }, E.o).catch(() => {});
+      snowTarget = Math.max(.25, snowTarget - .25);
+    });
+    await say6('st4');
+  },
+  async P => {
+    await scene('chasm', { cam: [420, 900, 1000], look: true, guide: guideOf() });
+    await say6('kl1'); await say6('kl2'); await say6('kl3');
+    const c = await choice('theo', [
+      { id: 'fly', label: 'Ugo flyver', say: 'd6.kl4', icon: ICON.ugo },
+      { id: 'bro', label: 'Isbroen', say: 'd6.kl5', icon: ICON.bro }
+    ]);
+    pick(6, P, 'theo', c);
+    const { pip, mille, ugo, guide } = C;
+    camTo(620, 900, 1150, 2000);
+    if (c === 'fly') {
+      await say6('fl1');
+      ugo.el.classList.add('flap');
+      for (const [ch, tx] of [[mille, 900], [pip, 980], [guide, 1060]]) {
+        await ugo.to(ch.x, ch.y - 120, 900, { ease: E.io });
+        await Promise.all([ugo.to(tx, 860, 1600, { ease: E.io }), ch.to(tx, 980, 1600, { ease: E.io })]);
+      }
+      await ugo.to(830, 984, 900, { ease: E.o }); ugo.el.classList.remove('flap');
+      await say6('fl2');
+    } else {
+      const along = (ch, tx, d) => tween(d, (t, raw) => { const x = ch.x0 + (tx - ch.x0) * t; const y = x > 460 && x < 780 ? 1000 - Math.sin((x - 460) / 320 * Math.PI) * 44 : 1004; ch.x = x; ch.y = y - Math.abs(Math.sin(raw * Math.PI * 10)) * 4; ch.set(); }, E.lin);
+      [guide, pip, mille, ugo].forEach(ch => ch.x0 = ch.x);
+      const p = Promise.all([along(guide, 1080, 4200), along(pip, 980, 4600), along(mille, 1030, 4800), along(ugo, 900, 5000)]);
+      await say6('gb1'); await p;
+      await say6('gb2');
+    }
+  },
+  async P => {
+    await scene('cave', { cam: [460, 900, 1000], look: true, guide: guideOf() });
+    camTo(600, 880, 900, 9000, E.s);
+    await Promise.all([C.pip.to(465, 1084, 3000, { hop: 6, steps: 8, ease: E.lin }), C.mille.to(530, 1088, 3000, { hop: 5, steps: 9, ease: E.lin }), C.ugo.to(400, 1080, 3000, { hop: 5, steps: 7, ease: E.lin }), C.guide.to(600, 1084, 3000, { hop: 6, steps: 8, ease: E.lin })]);
+    await say6('h1');
+    const hum = [196, 220, 196, 174.6]; hum.forEach((f, i) => A.bell(f, .06, i * .7));
+    await say6('h2'); await say6('h3'); await say6('h4'); await say6('h5');
+  }
+]);
+
+const DAYS = Object.assign({ 1: day1, 2: day2 }, DAYS_EXTRA);
 
 /* =========================================================
    Afspilning, slutkort og kalender
@@ -1588,7 +2361,7 @@ renderCal();
 /* =========================================================
    Optagestudie
    ========================================================= */
-const ROLE = { n: 'Fortæller', pip: 'Pip', mille: 'Mille', ugo: 'Ugo', raev: 'Ræven', egern: 'Egernet' };
+const ROLE = Object.assign({ n: 'Fortæller' }, NAMES);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const ST = { stream: null, mode: null, mr: null, recId: null, t0: 0, timer: null };
 async function openStudio() {
